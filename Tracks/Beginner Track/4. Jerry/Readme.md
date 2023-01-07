@@ -147,6 +147,8 @@ We get a shell with SYSTEM privileges! That was easy! We don’t even have to es
 Grab the user.txt and root.txt flags.
 
 ```
+┌──(darshan㉿kali)-[~]
+...
 C:\Users\Administrator\Desktop\flags>dir
 dir
  Volume in drive C has no label.
