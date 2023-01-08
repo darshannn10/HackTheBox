@@ -365,3 +365,8 @@ I used `Burp Suite` additionally to make the requesting process easier and faste
 ![uc-7](https://user-images.githubusercontent.com/87711310/211187043-9a0aee8f-7f26-43b4-b2bd-ab9de2e5a577.png)
 
 Using the `JWT tool` to modify the toke and use the exploit for key confusion
+
+
+---
+Will come back later
+---
