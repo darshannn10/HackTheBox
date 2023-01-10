@@ -40,12 +40,11 @@ So I ran an Nmap scan that covers all ports.
 
 ```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Bashed]
-└─$ sudo nmap -sC -sV -O -oA nmap 10.10.10.68
+└─$ sudo nmap -sC -sV -O -p- -oA nmap 10.10.10.68
 [sudo] password for darshan: 
 Starting Nmap 7.92 ( https://nmap.org ) at 2023-01-10 00:40 EST
 Nmap scan report for 10.10.10.68
 Host is up (0.13s latency).
-Not shown: 999 closed tcp ports (reset)
 PORT   STATE SERVICE VERSION
 80/tcp open  http    Apache httpd 2.4.18 ((Ubuntu))
 |_http-server-header: Apache/2.4.18 (Ubuntu)
