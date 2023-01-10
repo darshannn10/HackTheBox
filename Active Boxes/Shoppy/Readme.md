@@ -1,7 +1,8 @@
 # Shoppy (NoSQL Injection and Docker Vulnerability)
 
-Difficulty: `Easy`
-Points: `20`
+- Difficulty: `Easy`
+
+- Points: `20`
 
 ## Reconnaissance
 Kicking of the Recon phase with a good ol' simple Nmap scan.
@@ -51,3 +52,61 @@ The results show that there are two open ports:
 Before starting enumeration, I ran a more comprehensive nmap scan in the background to make sure that I did not miss anything
 
 So I ran an Nmap scan that covers all ports.
+
+```
+
+```
+
+## Enumeration
+
+On visiting the web-page to check whats it all about, I noticed that the web-site coverted the IP address to `http://shoppy.htb/`, indicating that I need to write the ip address of the machine and `shoppy.htb`, for display, in `/etc/hosts`.
+
+I did by executing following commands:
+```
+sudo nano /etc/hosts
+Added this command in the /etc/host file: 10.10.11.180 shoppy.htb
+Saved and exited the file
+```
+
+On reloading the site, we can see that there is a nice animation of a timer.
+
+I tried clicking here and there to look if there's any hidden button or something but there was nothing of such sort. I, then, proceeded to look at the `source-code` of the web-site and found nothing there too.
+
+So I decided to run `gobuster` to enumerate directories.
+
+Since we've added a host to a IP address, I used `-vhost` tag in gobuster instead of using `dir` tag
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Shoppy]
+└─$ gobuster vhost -w /usr/share/wordlists/SecLists-master/Discovery/DNS/bitquark-subdomains-top100000.txt -t 100 -u shoppy.htb 
+===============================================================
+Gobuster v3.1.0
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:          http://shoppy.htb
+[+] Method:       GET
+[+] Threads:      100
+[+] Wordlist:     /usr/share/wordlists/SecLists-master/Discovery/DNS/bitquark-subdomains-top100000.txt
+[+] User Agent:   gobuster/3.1.0
+[+] Timeout:      10s
+===============================================================
+2023/01/10 04:40:12 Starting gobuster in VHOST enumeration mode
+===============================================================
+Found: mattermost.shoppy.htb (Status: 200) [Size: 3122]
+                                                       
+===============================================================
+2023/01/10 04:42:18 Finished
+===============================================================
+                              
+```
+
+So I found `mattermost.shoppy.htb` and was given a error as soon as i visited the page. I then remembered to add the `mattermost.shoppy.htb` host to the IP address in the `/etc/hosts` file
+
+After adding the host, I refreshed the page, and there was nothing, just a blank white page, I checked out the source code and there was still nothing.
+
+![shp-1](https://user-images.githubusercontent.com/87711310/211517922-47417a2b-e1ed-40f8-9a05-3823aa6624ab.png)
+
+But after a few seconds when I visted the page again, there was a `login` form and I was in `/login` directory
+
+![shp-2](https://user-images.githubusercontent.com/87711310/211517930-916bcbf5-7e5e-4edd-b292-de5813be1ce8.png)
+
