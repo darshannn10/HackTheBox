@@ -141,4 +141,6 @@ by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
 I navigated to `/README` and found out the `Nibbleblog's version` (v4.0.3). So I immediately googled `nibbleblog v4.0.3 exploit` and found out a way to exploit this vulnerability
 
 
+![nib-4](https://user-images.githubusercontent.com/87711310/211606780-df7ac1fe-837d-42fc-8cec-5c68521cfe74.png)
+
 
