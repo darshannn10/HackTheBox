@@ -353,4 +353,19 @@ One thing to notice is that several of the vulnerabilities mention `cgi scripts`
 
 This vulnerability affected web servers utilizing CGI (Common Gateway Interface), which is a system for generating dynamic web content. If it turns out to be not vulnerable to `ShellShock`, searchsploit returned a bunch of other exploits we can try.
 
+Based on the information I found from enumerating this box, I think this box might have more than one solution. So I decided to figure out all the possible solutions to this box.
+
+## Solution 1
+Since we saw that the `Elastix` was vulnerable to LFI, I decided to go with it first, as exploiting a web-page using `LFI` is always easier than carrying out other attacks
+
+```
+Elastix 2.2.0 - 'graph.php' Local File Inclusion | php/webapps/37637.pl
+```
+I used the above mentioned module, and looking at the module, i found out the payload they used.
+
+```
+/vtigercrm/graph.php?current_language=../../../../../../../..//etc/amportal.conf%00&module=Accounts&action
+```
+
+here, `/etc/amportal.conf` is the system file in the Elastix software.
 
