@@ -1,6 +1,7 @@
 ## Reconnaissance
 
 Kicking off with a simple Nmap scan...
+
 __Nmap Scan__
 ```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Tier-1/three]
