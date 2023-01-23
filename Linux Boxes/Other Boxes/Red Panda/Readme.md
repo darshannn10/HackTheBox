@@ -209,4 +209,7 @@ Googling of SpringFramework’s SSTI allows me to find a cheat sheet for it. I t
 ![rp-6](https://user-images.githubusercontent.com/87711310/214083002-29a8f45c-0f6d-47cc-95ab-a1b2c9620e09.png)
 
 
+Apart from this, while doing some testing,  I received an error message that it contains banned characters. Further testing allows me to find out characters like `underscore (_)` and `percentage (%)`, are banned.
+
+![rp-7](https://user-images.githubusercontent.com/87711310/214091147-d5361a25-c9e0-4d7f-97e1-5bfb7a99e2dd.png)
 
