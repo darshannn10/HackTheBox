@@ -304,6 +304,6 @@ woodenk@redpanda:/home/woodenk$ chmod +x linpeas.sh
 chmod +x linpeas.sh
 
 ```
-I couldn't find any useful result from linpeas. So, then, I ran pspy to monitor the processes ran on the machine and I found something interesting here. 
+I couldn't find any useful result from linpeas. So, then, I ran [pspy](https://github.com/DominicBreuker/pspy) to monitor the processes ran on the machine and I found something interesting here. 
 
 ![rp-8](https://user-images.githubusercontent.com/87711310/214227654-bc642244-10aa-4c41-8096-3d43cee680ae.png)
