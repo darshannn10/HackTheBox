@@ -307,3 +307,119 @@ chmod +x linpeas.sh
 I couldn't find any useful result from linpeas. So, then, I ran [pspy](https://github.com/DominicBreuker/pspy) to monitor the processes ran on the machine and I found something interesting here. 
 
 ![rp-8](https://user-images.githubusercontent.com/87711310/214227654-bc642244-10aa-4c41-8096-3d43cee680ae.png)
+
+When using `pspy`, I noticed once in a while, a JAR file will be executed by root.
+
+```
+woodenk@redpanda:/tmp$ ./pspy64
+...
+2022/07/12 08:22:01 CMD: UID=0    PID=16166  | java -jar /opt/credit-score/LogParser/final/target/final-1.0-jar-with-dependencies.jar
+```
+
+
+So, I decided to download the file to my machine and check it out. I, simply hosted a server in the directory containing the file and used `wget` command to get the file on my machine
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/RedPanda]
+└─$ wget http://10.10.11.170:9091/final-1.0-jar-with-dependencies.jar
+--2023-01-24 09:23:49--  http://10.10.11.170:9091/final-1.0-jar-with-dependencies.jar
+Connecting to 10.10.11.170:9091... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 1280956 (1.2M) [application/java-archive]
+Saving to: ‘final-1.0-jar-with-dependencies.jar’
+
+final-1.0-jar-with-dependencies.jar    100%[============================================================================>]   1.22M   213KB/s    in 8.5s    
+
+2023-01-24 09:23:58 (147 KB/s) - ‘final-1.0-jar-with-dependencies.jar’ saved [1280956/1280956]
+
+```
+
+Then, I used [jd-gui] to view the java (.jar) file
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/RedPanda]
+└─$ jd-gui final-1.0-jar-with-dependencies.jar 
+Picked up _JAVA_OPTIONS: -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true
+```
+
+```java
+...
+public class App {
+  public static Map parseLog(String line) {
+    String[] strings = line.split("\\|\\|");
+    Map<Object, Object> map = new HashMap<>();
+    map.put("status_code", Integer.valueOf(Integer.parseInt(strings[0])));
+    map.put("ip", strings[1]);
+    map.put("user_agent", strings[2]);
+    map.put("uri", strings[3]);
+    return map;
+  }
+  
+  public static boolean isImage(String filename) {
+    if (filename.contains(".jpg"))
+      return true; 
+    return false;
+  }
+  
+  public static String getArtist(String uri) throws IOException, JpegProcessingException {
+    String fullpath = "/opt/panda_search/src/main/resources/static" + uri;
+    File jpgFile = new File(fullpath);
+    Metadata metadata = JpegMetadataReader.readMetadata(jpgFile);
+    for (Directory dir : metadata.getDirectories()) {
+      for (Tag tag : dir.getTags()) {
+        if (tag.getTagName() == "Artist")
+          return tag.getDescription(); 
+      } 
+    } 
+    return "N/A";
+  }
+  
+  public static void addViewTo(String path, String uri) throws JDOMException, IOException {
+    SAXBuilder saxBuilder = new SAXBuilder();
+    XMLOutputter xmlOutput = new XMLOutputter();
+    xmlOutput.setFormat(Format.getPrettyFormat());
+    File fd = new File(path);
+    Document doc = saxBuilder.build(fd);
+    Element rootElement = doc.getRootElement();
+    for (Element el : rootElement.getChildren()) {
+      if (el.getName() == "image")
+        if (el.getChild("uri").getText().equals(uri)) {
+          Integer totalviews = Integer.valueOf(Integer.parseInt(rootElement.getChild("totalviews").getText()) + 1);
+          System.out.println("Total views:" + Integer.toString(totalviews.intValue()));
+          rootElement.getChild("totalviews").setText(Integer.toString(totalviews.intValue()));
+          Integer views = Integer.valueOf(Integer.parseInt(el.getChild("views").getText()));
+          el.getChild("views").setText(Integer.toString(views.intValue() + 1));
+        }  
+    } 
+    BufferedWriter writer = new BufferedWriter(new FileWriter(fd));
+    xmlOutput.output(doc, writer);
+  }
+  
+  public static void main(String[] args) throws JDOMException, IOException, JpegProcessingException {
+    File log_fd = new File("/opt/panda_search/redpanda.log");
+    Scanner log_reader = new Scanner(log_fd);
+    while (log_reader.hasNextLine()) {
+      String line = log_reader.nextLine();
+      if (!isImage(line))
+        continue; 
+      Map parsed_data = parseLog(line);
+      System.out.println(parsed_data.get("uri"));
+      String artist = getArtist(parsed_data.get("uri").toString());
+      System.out.println("Artist: " + artist);
+      String xmlPath = "/credits/" + artist + "_creds.xml";
+      addViewTo(xmlPath, parsed_data.get("uri").toString());
+    } 
+  }
+}
+
+```
+
+Based on the code, we can see that content of /opt/panda_search/redpanda.log will be read line by line. After understanding the code, I realized there are a few conditions to pass:
+
+- The line must contain “.jpg” in the string
+- `split()` will be done to the string where “||” is the delimiter. See this article for `.split(“\\|\\|”)`.
+- The string must be split into 4 strings:
+- The first string must be a number.
+- 4th string must be pointing to an existing `.jpg` file.
+- The `.jpg `file’s metadata tag “Artist” must have a value that matched to /credits/<author_name>_creds.xml.
+- Since the current user does not have WRITE access to `/credits`, I have to set the `Artist` value to `../tmp/gg` where our XML exploit will be at `/tmp/gg_credits.xml`.
+- JPG file should be in a folder where the current user has WRITE access. I used `/tmp`.
