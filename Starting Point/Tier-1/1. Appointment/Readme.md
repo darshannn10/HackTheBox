@@ -19,7 +19,7 @@ PORT   STATE SERVICE VERSION
 
 Read data files from: /usr/bin/../share/nmap
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-# Nmap done at Sun Apr 17 19:49:07 2022 -- 1 IP address (1 host up) scanned in 18.30 seconds
+# Nmap done at Sun Jan 17 19:49:07 2022 -- 1 IP address (1 host up) scanned in 18.30 seconds
 ```
 
 
