@@ -56,7 +56,7 @@ Nmap done: 1 IP address (1 host up) scanned in 148.57 seconds
 
 ```
 
-We get back the following result showing that 2 ports are open:
+We get back the following result showing that 5 ports are open:
 - Port `22`: running `OpenSSH 7.4p1`.
 - Port `25`: running `smtpd 2.3.2`.
 - Port `80`: running `Apache httpd 2.4.25`.
