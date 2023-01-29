@@ -88,7 +88,7 @@ So, I looked at the source-code, and found an interesting `.js` file
 
 Looking at the contents of `photobomb.js` file, I found `username:password` combination in a `wierd email format`. 
 
-![pb-3](https://user-images.g![pr-7](https://user-images.githubusercontent.com/87711310/215265347-cc243110-e307-445c-80f3-b2987eea6761.png)ithubusercontent.com/87711310/215263440-88af22be-63b0-4e2d-8b53-c24888f55928.png)
+![pb-3](https://user-images.githubusercontent.com/87711310/215263440-88af22be-63b0-4e2d-8b53-c24888f55928.png)
 
 Since, there was nothing else than a `login` page that I encountered, I decided to use these credentials to check whether I could sign-in to the `/printer` page.
 
