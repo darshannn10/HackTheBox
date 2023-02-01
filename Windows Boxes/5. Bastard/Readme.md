@@ -1,4 +1,4 @@
-# Hack The Box - Bastard Walkthrough without Metasploit
+# Hack The Box - Bastard Walkthrough w/o Metasploit
 
 ## Reconnaissance
 Retrieving the IP address of the machine, I started a quick inital Nmap scan to see which ports are open and which services are running on those ports.
