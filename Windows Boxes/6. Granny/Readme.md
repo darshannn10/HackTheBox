@@ -76,13 +76,62 @@ Nmap done: 1 IP address (1 host up) scanned in 0.66 seconds
 Since, the version of `Microsoft IIS httpd` was too old, I decided to run `Nikto`, to check if there were any known kernel vulnerabilities in the version 6.0.
 
 ```
-
+Starting nikto scan
+                                                                                                                                                                        
+- Nikto v2.1.6
+--------------------------------------------------------------------
++ Target IP:          10.10.10.15
++ Target Hostname:    10.10.10.15
++ Target Port:        80
++ Start Time:         2020-02-16 23:26:18 (GMT-5)
+--------------------------------------------------------------------
++ Server: Microsoft-IIS/6.0
++ Retrieved microsoftofficewebserver header: 5.0_Pub
++ Retrieved x-powered-by header: ASP.NET
++ The anti-clickjacking X-Frame-Options header is not present.
++ The X-XSS-Protection header is not defined. This header can hint to the user agent to protect against some forms of XSS
++ Uncommon header 'microsoftofficewebserver' found, with contents: 5.0_Pub
++ The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type
++ Retrieved x-aspnet-version header: 1.1.4322
++ No CGI Directories found (use '-C all' to force check all possible dirs)
++ OSVDB-397: HTTP method 'PUT' allows clients to save files on the web server.
++ OSVDB-5646: HTTP method 'DELETE' allows clients to delete files on the web server.
++ Retrieved dasl header: <DAV:sql>
++ Retrieved dav header: 1, 2
++ Retrieved ms-author-via header: MS-FP/4.0,DAV
++ Uncommon header 'ms-author-via' found, with contents: MS-FP/4.0,DAV
++ Allowed HTTP Methods: OPTIONS, TRACE, GET, HEAD, DELETE, PUT, POST, COPY, MOVE, MKCOL, PROPFIND, PROPPATCH, LOCK, UNLOCK, SEARCH 
++ OSVDB-5646: HTTP method ('Allow' Header): 'DELETE' may allow clients to remove files on the web server.
++ OSVDB-397: HTTP method ('Allow' Header): 'PUT' method could allow clients to save files on the web server.
++ OSVDB-5647: HTTP method ('Allow' Header): 'MOVE' may allow clients to change file locations on the web server.
++ Public HTTP Methods: OPTIONS, TRACE, GET, HEAD, DELETE, PUT, POST, COPY, MOVE, MKCOL, PROPFIND, PROPPATCH, LOCK, UNLOCK, SEARCH 
++ OSVDB-5646: HTTP method ('Public' Header): 'DELETE' may allow clients to remove files on the web server.
++ OSVDB-397: HTTP method ('Public' Header): 'PUT' method could allow clients to save files on the web server.
++ OSVDB-5647: HTTP method ('Public' Header): 'MOVE' may allow clients to change file locations on the web server.
++ WebDAV enabled (UNLOCK PROPFIND COPY MKCOL SEARCH LOCK PROPPATCH listed as allowed)
++ OSVDB-13431: PROPFIND HTTP verb may show the server's internal IP address: http://granny/_vti_bin/_vti_aut/author.dll
++ OSVDB-396: /_vti_bin/shtml.exe: Attackers may be able to crash FrontPage by requesting a DOS device, like shtml.exe/aux.htm -- a DoS was not attempted.
++ OSVDB-3233: /postinfo.html: Microsoft FrontPage default file found.
++ OSVDB-3233: /_private/: FrontPage directory found.
++ OSVDB-3233: /_vti_bin/: FrontPage directory found.
++ OSVDB-3233: /_vti_inf.html: FrontPage/SharePoint is installed and reveals its version number (check HTML source for more information).
++ OSVDB-3300: /_vti_bin/: shtml.exe/shtml.dll is available remotely. Some versions of the Front Page ISAPI filter are vulnerable to a DOS (not attempted).
++ OSVDB-3500: /_vti_bin/fpcount.exe: Frontpage counter CGI has been found. FP Server version 97 allows remote users to execute arbitrary system commands, though a vulnerability in this version could not be confirmed. http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-1999-1376. http://www.securityfocus.com/bid/2252.
++ OSVDB-67: /_vti_bin/shtml.dll/_vti_rpc: The anonymous FrontPage user is revealed through a crafted POST.
++ /_vti_bin/_vti_adm/admin.dll: FrontPage/SharePoint file found.
++ 8018 requests: 0 error(s) and 32 item(s) reported on remote host
++ End Time:           2020-02-16 23:32:39 (GMT-5) (381 seconds)
+--------------------------------------------------------------------
++ 1 host(s) testedFinished nikto scan
+                                                                                                                                                                        
+=========================
 ```
 
 ## Enumeration
 While the `Nikto` scan was running I visited the web application in the browser.
 
-gran-1
+![gran-1](https://user-images.githubusercontent.com/87711310/216594408-474ea7a2-9d99-4d88-861f-e27370f79d4f.png)
+
 
 I looked for hidden message or button or some information and looked at the source-code too, but there was nothing. So, I decided to run `Gobuster` to enumerate directories.
 
