@@ -610,7 +610,7 @@ So, I downloaded the `zip` file, extracted it, started my `python server`, trans
 fupload=ms15-051x64.exe&fexec=ms15-051x64.exe whoami
 ```
 
-bas-9
+![bas-9](https://user-images.githubusercontent.com/87711310/216594388-3859eca8-bda0-44a6-9b2c-1d936956eeee.png)
 
 And guess what? I got a NT-authority\system from the machine, which means the exploit works and now all I gotta do is get back a reverse shell from the machine and I can be `root`
 
