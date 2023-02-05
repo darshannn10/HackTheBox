@@ -48,11 +48,9 @@ Nmap done: 1 IP address (1 host up) scanned in 202.17 seconds
 ```
 
 So, we got back the results and `` ports open
-- Port `22`: running `OpenSSH 8.2p1 `
+- Port `22`: running `OpenSSH 8.2p `
 - Port `80`: runninng `nginx 1.18.0`
-- Port ``: 
-- Port ``:
-- Port ``:
+- Ports `21`, `256`, `2301`, etc were all filtered ports. 
 
 
 Before starting enumeration, I ran a more comprehensive scan in the background to make sure that I did not miss anything.
@@ -120,7 +118,7 @@ http://stocker.htb [200 OK] Bootstrap, Country[RESERVED][ZZ], HTML5, HTTPServer[
 
 Then, I visited the web-page.
 
-stk-1
+![stk-1](https://user-images.githubusercontent.com/87711310/216814560-ec913f10-07c6-4918-8b6f-9757e59b5953.png)
 
 Notice this one user that was displayed on the web-page as the head of IT service, his name might be useful at the later stages.
 
@@ -177,9 +175,12 @@ Found. Redirecting to /login
 
 So, I visited the `http://dev.stocker.htb`, and this is what it looked like.
 
-stk-2
+![stk-2](https://user-images.githubusercontent.com/87711310/216814564-861afc88-c4c7-4770-93f3-4b4081f3a78c.png)
 
 Trying common/default credentials did not work, so I decided to use `Burp` to intercept the request.
+
+![stk-3](https://user-images.githubusercontent.com/87711310/216814566-38b49c83-b471-4cce-bfb9-7e1aa9860a6a.png)
+
 
 Now, I thought of using SQL-Injection to bypass the login form. I used various payloads from [here](https://github.com/payloadbox/sql-injection-payload-list), but none seem to work.
 
@@ -222,32 +223,32 @@ Referer: http://dev.stocker.htb/login
 
 As soon as I sent the request, I was redirected to `/stock` page
 
-stk-4
+![stk-4](https://user-images.githubusercontent.com/87711310/216814690-2d777376-0822-4fc5-ab1d-420d4c2dee0c.png)
 
 ## Gaining Initial Foothold
 Now that I was logged in, I decided to check out the page, which looked like a e-commerce website where I was able to add items to cart and also checkout with a receipt generated at the end.
 
-stk-5
+![stk-5](https://user-images.githubusercontent.com/87711310/216814691-db817b7d-4683-446d-8f48-61506e40d66f.png)
 
 I added an `axe` to the cart.
 
-stk-6 
+![stk-6](https://user-images.githubusercontent.com/87711310/216814694-7c175c87-17e5-4322-ba5b-31cc35931180.png)
 
 The `view cart` button showed me the items that were in my cart.
 
 Once, I clicked `submit purchase`, I got the following message.
 
-stk-7
+![stk-7](https://user-images.githubusercontent.com/87711310/216814695-fc84f0b6-c7ba-4277-a54d-b7af69591594.png)
 
 I could also see the receipt that the site had generated after purchase confirmation.
 
-stk-8
+![stk-8](https://user-images.githubusercontent.com/87711310/216814720-20bdde71-f356-4874-83cc-cdb5dd2d11f6.png)
 
 I think that `Submit Purchase` is something that we're supposed to exploit, I wasn't sure but I decided to give it a try.
 
 I went to `Burp` and intercepted the request.
 
-stk-9
+![stk-9](https://user-images.githubusercontent.com/87711310/216814726-7b79eabf-a22a-46cf-a27b-80b49197ef81.png)
 
 Now, I noticed a few things:
 - The order ID was changing after every order, as it would in a function website. So ig its normal.
@@ -256,12 +257,13 @@ Now, I noticed a few things:
 
 So, I checked whether I could change the value of these parameter and get away with it.
 
-stk-10
+![stk-10](https://user-images.githubusercontent.com/87711310/216814731-b1de00e2-6732-4e97-b812-98227ea438fd.png)
+
 
 Now as you can see that I was able to manipulate the price of the product to whatever I wanted.
 
 Apart from that you can also notice the purchaser's name in the top right corner of the receipt.
-```Angoose```
+```angoose```
 
 Now, I decied to test the `title` parameter
 
@@ -284,7 +286,8 @@ Now, I decied to test the `title` parameter
 
 And I viewed the receipt.
 
-stk-11
+![stk-11](https://user-images.githubusercontent.com/87711310/216814742-f34c84fd-7209-4d7f-a33e-56dec5353e2e.png)
+
 
 So, now it was confirmed that I was able to inject HTML code inside the `title` parameter.
 
@@ -299,11 +302,13 @@ Testing if I can read files of local server.
 
 The request i sent was
 
-stk-12
+![stk-12](https://user-images.githubusercontent.com/87711310/216814744-13df632c-fda5-49e9-a621-30fad9e3721f.png)
+
 
 Once the request was sent, I looked at receipt's pdf and got back the contents of `/etc/passwd` 
 
-stk-13
+![stk-13](https://user-images.githubusercontent.com/87711310/216814747-4debfb86-9da2-4f57-a879-ecabca4f2f39.png)
+
 
 Now that I was able to read files on the local server, i decided to look at the `index.js` file which resides at `/var/www/dev/index.js`
 
@@ -311,6 +316,9 @@ Since the
 ```
 "title":"<iframe src=file:///var/www/dev/index.js height=800px width=800px></iframe>",
 ```
+
+![stk-14](https://user-images.githubusercontent.com/87711310/216814767-79783ce8-6a0e-48fd-b6e7-091515c2e2f4.png)
+
 
 I looked at the receipt generated and found a password (I guess). Now that I have a username `angoose` and a password `IHeardPassphrasesArePrettySecure`, i wanted to check if I was able to login to SSH usign these credentials.
 
