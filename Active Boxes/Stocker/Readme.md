@@ -47,7 +47,7 @@ OS and Service detection performed. Please report any incorrect results at https
 Nmap done: 1 IP address (1 host up) scanned in 202.17 seconds
 ```
 
-So, we got back the results and `` ports open
+So, we got back the results and `2` open ports while the rest are filtered.
 - Port `22`: running `OpenSSH 8.2p `
 - Port `80`: runninng `nginx 1.18.0`
 - Ports `21`, `256`, `2301`, etc were all filtered ports. 
