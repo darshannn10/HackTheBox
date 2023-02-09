@@ -49,13 +49,6 @@ The results show that there are two open ports:
 - port `22`: OpenSSH 8.4p1 Debian
 - port `80`: nginx 1.23.1
 
-Before starting enumeration, I ran a more comprehensive nmap scan in the background to make sure that I did not miss anything
-
-So I ran an Nmap scan that covers all ports.
-
-```
-
-```
 
 ## Enumeration
 
