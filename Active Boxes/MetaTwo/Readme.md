@@ -521,4 +521,6 @@ So, now, my only option left was try it on the `/wp-login.php` login page.
 
 And it worked!!!
 
+Now, there were too many way through which I could upload media and I kind of knew that this was my way in, to obtain a reverse shell through file upload.
 
+Now, I knew the website was running on `Wordpress v5.6.2` so, I decided to search if any vulnerabilities related to this particular version exists
