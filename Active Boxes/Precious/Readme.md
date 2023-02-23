@@ -76,7 +76,7 @@ So, after looking at results of `Nmap` and `Rustscan`, I found the following 2 p
 - Port `22`: running `OpenSSH 8.4p1`.
 - Port `80`: running `nginx 1.18.0`.
 
-There was one more interesting thing indicated by `nmap` for port `80`
+There was an interesting thing indicated by `nmap` for port `80`
 ```
 80/tcp open  http    nginx 1.18.0
 ...
