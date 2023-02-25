@@ -130,7 +130,8 @@ Nmap done: 1 IP address (1 host up) scanned in 0.31 seconds
 ## Enumeration
 Visiting the website on port `80`, I found out that the site is for a site for furniture company
 
-sqs-1
+![sqs-1](https://user-images.githubusercontent.com/87711310/221344731-a675a4fe-3b1a-434b-9704-6d151a29e77e.png)
+
 
 There was nothing interesting on the page, none of the links go anywhere.
 
@@ -379,7 +380,8 @@ Loading up `http://squashed.htb/test.html` in the browser, it returned the messa
 
 NOTE: I had added the IP and its host in `/etc/hosts` file
 
-sqs-2
+![sqs-2](https://user-images.githubusercontent.com/87711310/221344738-b0ab058b-d0c1-4584-bc36-06cd5a6b9b51.png)
+
 
 So now, I tried to check if the site was able to handle the `PHP` code, cause its worth taking a shot and seeing it whether the webserver will execute PHP or not.
 
@@ -395,7 +397,8 @@ fak3r@kali:/home/kali/Desktop/HackTheBox/Linux-Boxes/Squashed$ echo -e '<?php\n 
 
 On visiting the `http://squashed.htb/test/php`, I was able to see the following image which was a clear indication of `php` being executed on the site.
 
-sqs-3
+![sqs-3](https://user-images.githubusercontent.com/87711310/221344743-0e09f6af-ada3-4555-9509-b3f5f286fa2a.png)
+
 
 So now, I overwrite the same file with a simple `PHP` web-shell.
 
@@ -409,7 +412,8 @@ fak3r@kali:/home/kali/Desktop/HackTheBox/Linux-Boxes/Squashed$ echo -e '<?php\n 
 
 Visiting the website, if I just load the page, there’s nothing there. But if I add `?cmd=id` to the end:
 
-sqs-4
+![sqs-4](https://user-images.githubusercontent.com/87711310/221344749-ffc0aa2b-f7d3-439b-8940-7dc4de33c296.png)
+
 
 
 TO go from this webshell to a full reverse shell, I'll just pass in a bash reverse shell as `cmd`:
