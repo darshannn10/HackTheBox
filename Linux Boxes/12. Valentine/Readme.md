@@ -135,4 +135,51 @@ And I got one port open:
 - port `5353`: running `mdns`
 
 
+## Enumeration
+
+Since the ssh version of `OpenSSH 5.9p1` looked old, I decided to start the enumeration by it.
+
+On googling the version to find a launchpad site, it finds a [launchpad site](https://launchpad.net/ubuntu/+source/openssh/1:5.9p1-5ubuntu1.9) with the distro information.
+
+![val-1](https://user-images.githubusercontent.com/87711310/222728161-fa54a8bd-053a-4158-b2b3-74a7caba2d8a.png)
+
+So, now, on googling `Ubuntu releases precise` and visiting the `Releases` page on Wiki, I was able to look at all the releases. It can found here: [Ubuntu Releases](https://wiki.ubuntu.com/Releases)
+
+![val-2](https://user-images.githubusercontent.com/87711310/222728786-2dc17424-707b-4d70-b11b-acc50869e186.png)
+
+The Ubuntu wiki releases page shows that Precise Pangolin was Ubuntu 12.04, and went end of line by April 28, 2017.
+
+Keeping this in mind, I visited the website and this was the home page.
+
+![val-3](https://user-images.githubusercontent.com/87711310/222729105-dae4f60c-9f76-4870-adf5-ea377ecda430.png)
+
+Both the http and https sites are just an image: `<center><img src="omg.jpg"/></center>`
+
+On reverse searching the image, I found out that it was a `Heartbleed` logo. 
+
+#### Now, what is heartbleed?
+- Heartbleed is a logic error that allowed an attacker to grab chunks of random memory that they shouldn’t have had access to.
+
+- There’s no better explanation of Heartbleed than [xkcd’s flyer](https://xkcd.com/1354/):
+
+![val-4](https://user-images.githubusercontent.com/87711310/222729934-254ed138-5ff7-41c5-9ac6-4b2b0486360d.png)
+
+So, now that I know how the vulnenrability works, I just had to search for the exploit and run it against the website.
+
+I used `searchsploit` to find the exploit. You can also use google to find out the exploit.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Valentine]
+└─$ searchsploit heartbleed
+---------------------------------------------------------------------------------------------------------------------------------
+ Exploit Title                                                                                       |  Path
+---------------------------------------------------------------------------------------------------------------------------------
+OpenSSL 1.0.1f TLS Heartbeat Extension - 'Heartbleed' Memory Disclosure (Multiple SSL/TLS Versions)  | multiple/remote/32764.py
+OpenSSL TLS Heartbeat Extension - 'Heartbleed' Information Leak (1)                                  | multiple/remote/32791.c
+OpenSSL TLS Heartbeat Extension - 'Heartbleed' Information Leak (2) (DTLS Support)                   | multiple/remote/32998.c
+OpenSSL TLS Heartbeat Extension - 'Heartbleed' Memory Disclosure                                     | multiple/remote/32745.py
+---------------------------------------------------------------------------------------------------------------------------------
+Shellcodes: No Results
+
+```
 
