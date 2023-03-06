@@ -334,3 +334,97 @@ Visiting the `/wordpress`, I found out that it was an empty directory.
 
 ![frd-2](https://user-images.githubusercontent.com/87711310/223151243-eed22ce1-f0bb-4914-bfe9-aed5b8e3e25f.png)
 
+There was nothing on port `80`, so I decided to visit port `443`. This page was different from the `HTTP` site.
+
+![frd-3](https://user-images.githubusercontent.com/87711310/223155824-ad5d5775-2d37-4fa5-93df-e17acffbc796.png)
+
+There was nothing on the web-page, but when I checked out the source-code of the page, I found something.
+
+![frd-4](https://user-images.githubusercontent.com/87711310/223159196-2c59f102-5312-4b65-9e8c-e61e74dfb184.png)
+
+Visiting the `/js/js` directory, I found a wierd string.
+
+![image](https://user-images.githubusercontent.com/87711310/223159460-715c4658-06dc-4573-b40d-cadb859788d0.png)
+
+Looking at the source-code of the page, I found some comments.
+
+![frd-4](https://user-images.githubusercontent.com/87711310/223159738-3ae8bac6-ccb2-4427-84de-566b148cd914.png)
+
+This comment might be an indicator of DNS zone transfer and since I didnt knew about it much, I decided to google it out.
+
+First, I used `nslookup` to look for the IP address.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Friendzone]
+└─$ nslookup 10.10.10.123                               
+** server can't find 123.10.10.10.in-addr.arpa: NXDOMAIN
+```
+
+I didn’t get anything. However, I had two possible domains from previous enumeration steps:
+- `friendzone.red` from the nmap scan,
+- `friendzoneportal.red` from the HTTP website
+
+So, now, I decided to try a zone transfer on both domains. I googled the command for zone transfer.
+
+#### # zone transfer command: 
+```
+host -l <domain-name> <dns_server-address>
+```
+
+So I decided to add both the domains in a text file.
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Friendzone]
+└─$ host -l friendzone.red 10.10.10.123 > zonetransfer.txt
+
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Friendzone]
+└─$ host -l friendzoneportal.red 10.10.10.123 >> zonetransfer.txt 
+```
+
+Then I just ran `nslookup`
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Friendzone]
+└─$ nslookup             
+> server 10.10.10.123
+Default server: 10.10.10.123
+Address: 10.10.10.123#53
+
+```
+
+You wont see any changes, but once you opne the `zonetransfer.txt` file, you'll see all the sub-domains.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Friendzone]
+└─$ cat zonetransfer.txt 
+Using domain server:
+Name: 10.10.10.123
+Address: 10.10.10.123#53
+Aliases: 
+
+friendzone.red has IPv6 address ::1
+friendzone.red name server localhost.
+friendzone.red has address 127.0.0.1
+administrator1.friendzone.red has address 127.0.0.1
+hr.friendzone.red has address 127.0.0.1
+uploads.friendzone.red has address 127.0.0.1
+Using domain server:
+Name: 10.10.10.123
+Address: 10.10.10.123#53
+Aliases: 
+
+friendzoneportal.red has IPv6 address ::1
+friendzoneportal.red name server localhost.
+friendzoneportal.red has address 127.0.0.1
+admin.friendzoneportal.red has address 127.0.0.1
+files.friendzoneportal.red has address 127.0.0.1
+imports.friendzoneportal.red has address 127.0.0.1
+vpn.friendzoneportal.red has address 127.0.0.1
+
+```
+
+Now, I added all the domains/sub-doamains to the `/etc/hosts` file.
+
+```
+10.10.10.123 friendzone.red friendzoneportal.red admin.friendzoneportal.red files.friendzoneportal.red imports.friendzoneportal.red vpn.friendzoneportal.red administrator1.friendzone.red hr.friendzone.red uploads.friendzone.red
+```
+
