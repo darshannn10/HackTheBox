@@ -145,3 +145,192 @@ There were few important things that I noticed from the nmap results.
 3. port `80` & `443` showed different papge titles indicating a presence of virtual hosts routing configuration.
 4. SMB services were detected on ports `145` & `443`
 
+## Enumeration.
+Since there was `SMB` on the machine, I started the enumeration process from there.
+
+I used `smbmap` for a quick look at the shares and my permissions.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Friendzone]
+└─$ smbmap -H 10.10.10.123                  
+[+] Guest session       IP: 10.10.10.123:445    Name: 10.10.10.123                                      
+        Disk                                                    Permissions     Comment
+        ----                                                    -----------     -------
+        print$                                                  NO ACCESS       Printer Drivers
+        Files                                                   NO ACCESS       FriendZone Samba Server Files /etc/Files
+        general                                                 READ ONLY       FriendZone Samba Server Files
+        Development                                             READ, WRITE     FriendZone Samba Server Files
+        IPC$                                                    NO ACCESS       IPC Service (FriendZone server (Samba, Ubuntu))
+```
+
+Using `smbclient` along with `-L` flag to list all the contents and `-N` flag for null session.
+
+```
+──(darshan㉿kali)-[~]
+└─$ smbclient -N -L //10.10.10.123
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+        print$          Disk      Printer Drivers
+        Files           Disk      FriendZone Samba Server Files /etc/Files
+        general         Disk      FriendZone Samba Server Files
+        Development     Disk      FriendZone Samba Server Files
+        IPC$            IPC       IPC Service (FriendZone server (Samba, Ubuntu))
+Reconnecting with SMB1 for workgroup listing.
+
+        Server               Comment
+        ---------            -------
+
+        Workgroup            Master
+        ---------            -------
+        WORKGROUP            FRIENDZONE
+```
+
+I noticed a comment on `Files` share that mentioned `/etc/Files` while `general` & `Development` also had almost similar comments. So, I decided to run the nmap script `smb-sum-shares.nse` scan.
+
+```
+┌──(darshan㉿kali)-[~]
+└─$ nmap --script smb-enum-shares.nse -p445 10.10.10.123
+Starting Nmap 7.93 ( https://nmap.org ) at 2023-03-06 09:48 EST
+Nmap scan report for 10.10.10.123
+Host is up (0.12s latency).
+
+PORT    STATE SERVICE
+445/tcp open  microsoft-ds
+
+Host script results:
+| smb-enum-shares: 
+|   account_used: guest
+|   \\10.10.10.123\Development: 
+|     Type: STYPE_DISKTREE
+|     Comment: FriendZone Samba Server Files
+|     Users: 0
+|     Max Users: <unlimited>
+|     Path: C:\etc\Development
+|     Anonymous access: READ/WRITE
+|     Current user access: READ/WRITE
+|   \\10.10.10.123\Files: 
+|     Type: STYPE_DISKTREE
+|     Comment: FriendZone Samba Server Files /etc/Files
+|     Users: 0
+|     Max Users: <unlimited>
+|     Path: C:\etc\hole
+|     Anonymous access: <none>
+|     Current user access: <none>
+|   \\10.10.10.123\IPC$: 
+|     Type: STYPE_IPC_HIDDEN
+|     Comment: IPC Service (FriendZone server (Samba, Ubuntu))
+|     Users: 1
+|     Max Users: <unlimited>
+|     Path: C:\tmp
+|     Anonymous access: READ/WRITE
+|     Current user access: READ/WRITE
+|   \\10.10.10.123\general: 
+|     Type: STYPE_DISKTREE
+|     Comment: FriendZone Samba Server Files
+|     Users: 0
+|     Max Users: <unlimited>
+|     Path: C:\etc\general
+|     Anonymous access: READ/WRITE
+|     Current user access: READ/WRITE
+|   \\10.10.10.123\print$: 
+|     Type: STYPE_DISKTREE
+|     Comment: Printer Drivers
+|     Users: 0
+|     Max Users: <unlimited>
+|     Path: C:\var\lib\samba\printers
+|     Anonymous access: <none>
+|_    Current user access: <none>
+
+Nmap done: 1 IP address (1 host up) scanned in 31.79 seconds
+                                   
+```
+
+Now, I decided to visit these shares to take a look at their contents. But, it was empty.
+
+```
+┌──(darshan㉿kali)-[~]
+└─$ smbclient -N //10.10.10.123/Development  
+Try "help" to get a list of possible commands.
+smb: \> ls
+  .                                   D        0  Mon Mar  6 09:49:09 2023
+  ..                                  D        0  Tue Sep 13 10:56:24 2022
+
+                3545824 blocks of size 1024. 1651404 blocks available
+```
+
+Then, I visited the `general` share. It had a single file, `creds.txt`. So, I decided to get that file on my machine and check it out.
+
+```
+┌──(darshan㉿kali)-[~]
+└─$ smbclient -N //10.10.10.123/general    
+Try "help" to get a list of possible commands.
+smb: \> ls
+  .                                   D        0  Wed Jan 16 15:10:51 2019
+  ..                                  D        0  Tue Sep 13 10:56:24 2022
+  creds.txt                           N       57  Tue Oct  9 19:52:42 2018
+
+                3545824 blocks of size 1024. 1651404 blocks available
+smb: \> get creds.txt
+getting file \creds.txt of size 57 as creds.txt (0.1 KiloBytes/sec) (average 0.1 KiloBytes/sec)
+```
+
+It contained admin's credentials.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Friendzone]
+└─$ cat creds.txt                               
+creds for the admin THING:
+
+admin:WORKWORKHhallelujah@#
+```
+
+I didn't know where it would work, so I kept enumerating further.
+
+Next, I visited the webpage on port `80` and found this page. I found this `friendzoneportal.red` domain and nothing else.
+
+![frd-1](https://user-images.githubusercontent.com/87711310/223148180-75af8cb6-093e-4080-b0db-ce6717a6f502.png)
+
+So, then, I decided to run `gobuster` on the domain after adding the domain to `/etc/hosts`.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Friendzone]
+└─$ gobuster dir -u http://friendzone.red/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -x txt,php -t 20
+
+===============================================================
+Gobuster v3.4
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://friendzone.red/
+[+] Method:                  GET
+[+] Threads:                 20
+[+] Wordlist:                /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt
+[+] Negative Status codes:   404
+[+] User Agent:              gobuster/3.4
+[+] Extensions:              txt,php
+[+] Timeout:                 10s
+===============================================================
+2023/03/06 10:11:04 Starting gobuster in directory enumeration mode
+===============================================================
+/.php                 (Status: 403) [Size: 293]
+/wordpress            (Status: 301) [Size: 320] [--> http://friendzone.red/wordpress/]
+/robots.txt           (Status: 200) [Size: 13]
+===============================================
+2019/02/05 15:33:59 Finished
+===============================================
+```
+
+So, it found `wordpress` and `robots.txt`.
+
+Visiting `robots.txt`, I found a sinlge word message which I suppose was just for a troll.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Friendzone]
+└─$ curl http://friendzone.red/robots.txt
+seriously ?!
+```
+
+Visiting the `/wordpress`, I found out that it was an empty directory.
+
+![frd-2](https://user-images.githubusercontent.com/87711310/223151243-eed22ce1-f0bb-4914-bfe9-aed5b8e3e25f.png)
+
