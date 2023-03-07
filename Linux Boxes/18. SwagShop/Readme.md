@@ -97,9 +97,7 @@ On looking at the website carefully, I found out that it was running `Magneto`, 
 
 I noticed that at the bottom of the page, it has a copyright detailing the year 2014, so it’s very likely to be vulnerable.
 
-On googling about Magneto, I found out that, just like there is a scanner for WordPress applications (WPScan), there is one for Magento applications that is called `Mage Scan`.
-
-But before running the Mage-Scan, I decided to run `gobuster`.
+But before looking for exploits, I decided to run `gobuster`.
 
 ```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/SwagShop]
@@ -133,4 +131,67 @@ Progress: 207548 / 207644 (99.95%)
 ===============================================================
 2023/03/07 02:44:27 Finished
 ===============================================================
+```
+
+I started with `/index.php` where I found the presence of `/admin` panel too.
+
+![image](https://user-images.githubusercontent.com/87711310/223371817-4755a8a7-30c4-41d5-805a-72d807518de7.png)
+
+
+Visiting the `/mage` directory, I found this script.
+
+```php
+#!/bin/sh
+
+# REPLACE with your PHP5 binary path (example: /usr/local/php5/bin/php )
+#MAGE_PHP_BIN="php"
+
+MAGE_PHP_SCRIPT="mage.php"
+DOWNLOADER_PATH='downloader'
+
+# initial setup
+if test "x$1" = "xmage-setup"; then
+    echo 'Running initial setup...'
+
+    if test "x$2" != "x"; then
+        MAGE_ROOT_DIR="$2"
+    else
+        MAGE_ROOT_DIR="`pwd`"
+    fi
+
+    $0 config-set magento_root "$MAGE_ROOT_DIR"
+    $0 config-set preferred_state beta
+    $0 channel-add http://connect20.magentocommerce.com/community
+    exit
+fi
+
+# check that mage pear was initialized
+
+if test "x$1" != "xconfig-set" &&
+  test "x$1" != "xconfig-get" &&
+  test "x$1" != "xconfig-show" &&
+  test "x$1" != "xchannel-add" &&
+  test "x`$0 config-get magento_root`" = "x"; then
+    echo 'Please initialize Magento Connect installer by running:'
+    echo "$0 mage-setup"
+    exit;
+fi
+
+# find which PHP binary to use
+if test "x$MAGE_PHP_BIN" != "x"; then
+  PHP="$MAGE_PHP_BIN"
+else
+  PHP=php
+fi
+
+
+# get default pear dir of not set
+if test "x$MAGE_ROOT_DIR" = "x"; then
+    MAGE_ROOT_DIR="`pwd`/$DOWNLOADER_PATH"
+fi
+
+exec $PHP -C -q $INCARG -d output_buffering=1 -d variables_order=EGPCS \
+    -d open_basedir="" -d safe_mode=0 -d register_argc_argv="On" \
+    -d auto_prepend_file="" -d auto_append_file="" \
+    $MAGE_ROOT_DIR/$MAGE_PHP_SCRIPT "$@"
 ```
