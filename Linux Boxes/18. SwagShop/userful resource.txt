@@ -1,0 +1,7 @@
+https://dustri.org/b/writing-a-simple-extensionbackdoor-for-magento.html
+
+https://0xdf.gitlab.io/2019/09/28/htb-swagshop.html
+
+https://rana-khalil.gitbook.io/hack-the-box-oscp-preparation/linux-boxes/swagshop-writeup-w-o-metasploit
+
+https://forum.hackthebox.com/t/was-swagshop-patched-again/3832/7
