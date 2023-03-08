@@ -519,3 +519,36 @@ Grabbing the root flag.
 cat /root/root.txt
 [REDACTED]
 ```
+
+
+## Beyond Root - PHP Misconfiguration
+
+In gaining an initial foothold, I uploaded a file `10_10_14_5.php.png`, and the webserver treated it as PHP code and ran it. I wanted to look at the Apache configuration to see how it compared to the issue mentioned in this [article](https://blog.remirepo.net/post/2013/01/13/PHP-and-Apache-SetHandler-vs-AddHandler).
+
+The Apache config files are stored in `/etc/httpd/`. The main config is `/etc/httpd/conf/httpd.conf`, but it’s last lines are:
+
+```
+# Supplemental configuration
+#
+# Load config files in the "/etc/httpd/conf.d" directory, if any.
+IncludeOptional conf.d/*.conf
+```
+
+Inside `/etc/http/conf.d`, I found a handful of `.conf` files:
+
+```
+[root@networked ~]# ls /etc/httpd/conf.d/
+autoindex.conf  php.conf  README  userdir.conf  welcome.conf
+```
+
+Checking out the `php.cong`, I saw the same config from the blog post:
+```
+[root@networked ~]# cat /etc/httpd/conf.d/php.conf 
+AddHandler php5-script .php
+AddType text/html .php
+DirectoryIndex index.php
+php_value session.save_handler "files"
+php_value session.save_path    "/var/lib/php/session"
+```
+
+I could see `AddHander` for `.php`, which will has implied wildcards on each side, so it will match on `.php` anywhere in filename.
