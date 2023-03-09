@@ -509,3 +509,4 @@ pepper@jarvis:~$ cat user.txt
 ```
 
 ## Privilege Escalation
+I decided to transfer `linpeas.sh` to the victim machine.
