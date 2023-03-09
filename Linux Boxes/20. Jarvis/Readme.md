@@ -1,4 +1,4 @@
-# Hack The Box - Networked Walkthrough w/o Metasploit
+# Hack The Box - Jarvis Walkthrough 
 
 ## Reconnaissance
 Retrieving the IP address of the machine, I started a quick inital Nmap scan to see which ports are open and which services are running on those ports.
