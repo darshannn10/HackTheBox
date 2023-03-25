@@ -124,8 +124,203 @@ But, it didn't work.
 
 On further enumerating the website, I found out that the images were not referenced directly but rather fetched using a potential LFI in PHP, i.e. `/includes/img.php?path=bench.png`
 
-So, I started with basic LFI payloads, trying anything with `../` displays `Error: Attack deected.`
+So, I started with basic LFI payloads, trying anything with `../` displays `Error: Attack detected.`
+
+After trying to bypass the LFI for a while, I was unable to do it. So, I decided to take a step back, and try something else.
+
+So, firstly, I decided to enumerate directories using `ffuf`
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/BroScience]
+└─$ ffuf -w /usr/share/wordlists/seclists/Discovery/Web-Content/common.txt -u https://broscience.htb/FUZZ
+
+        /'___\  /'___\           /'___\       
+       /\ \__/ /\ \__/  __  __  /\ \__/       
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+         \ \_\   \ \_\  \ \____/  \ \_\       
+          \/_/    \/_/   \/___/    \/_/       
+
+       v1.5.0 Kali Exclusive <3
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : https://broscience.htb/FUZZ
+ :: Wordlist         : FUZZ: /usr/share/wordlists/seclists/Discovery/Web-Content/common.txt
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200,204,301,302,307,401,403,405,500
+________________________________________________
+.hta.php                [Status: 403, Size: 280, Words: 20, Lines: 10]
+.htaccess               [Status: 403, Size: 280, Words: 20, Lines: 10]
+.hta                    [Status: 403, Size: 280, Words: 20, Lines: 10]
+.htpasswd.php           [Status: 403, Size: 280, Words: 20, Lines: 10]
+.htaccess.php           [Status: 403, Size: 280, Words: 20, Lines: 10]
+.htpasswd               [Status: 403, Size: 280, Words: 20, Lines: 10]
+activate.php            [Status: 200, Size: 1256, Words: 293, Lines: 28]
+comment.php             [Status: 302, Size: 13, Words: 3, Lines: 1]
+images                  [Status: 301, Size: 319, Words: 20, Lines: 10]
+includes                [Status: 301, Size: 321, Words: 20, Lines: 10]
+index.php               [Status: 200, Size: 9308, Words: 3953, Lines: 147]
+index.php               [Status: 200, Size: 9308, Words: 3953, Lines: 147]
+javascript              [Status: 301, Size: 323, Words: 20, Lines: 10]
+login.php               [Status: 200, Size: 1936, Words: 567, Lines: 42]
+logout.php              [Status: 302, Size: 0, Words: 1, Lines: 1]
+manual                  [Status: 301, Size: 319, Words: 20, Lines: 10]
+register.php            [Status: 200, Size: 2161, Words: 635, Lines: 45]
+server-status           [Status: 403, Size: 280, Words: 20, Lines: 10]
+styles                  [Status: 301, Size: 319, Words: 20, Lines: 10]
+user.php                [Status: 200, Size: 1309, Words: 300, Lines: 29]
+:: Progress: [4713/4713] :: Job [1/1] :: 138 req/sec :: Duration: [0:00:45] :: Errors: 0 ::
+```
+
+`Ffuf` resulted back some interesting directories, so I visited them.
+
+![image](https://user-images.githubusercontent.com/87711310/227706025-43206459-82e7-483d-9150-97251e1f4770.png)
+
+There was this registration page on `/register.php`. I entered the details and after registering I got a message.
+
+![image](https://user-images.githubusercontent.com/87711310/227706080-79cbc9bb-b38f-46bb-9ee1-4921045da025.png)
+
+Now, I did not know where was the activation link email, so I just ignored it and tried to login using the registered credentials.
+
+![image](https://user-images.githubusercontent.com/87711310/227706245-c614576a-57db-4657-a508-a2d9ef7a60ae.png)
+
+I was not able to log into the website as my account was not activated.
+
+`Ffuf` also listed that it found `activate.php`, so I visited it too.
+
+![image](https://user-images.githubusercontent.com/87711310/227706317-bf82c240-cdc7-4c68-9f8e-f29b268886a9.png)
 
 
+I think there a parameter that contains an input which is missing. I found this tool called [Arjun](https://github.com/s0md3v/Arjun) (It's pre-installed in Kali, but I was unaware of it). So `Arjun` basically finds query parameters for URL endpoints.
 
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/BroScience]
+└─$ arjun -u https://broscience.htb/activate.php?
+/home/kali/.local/lib/python3.10/site-packages/requests/__init__.py:87: RequestsDependencyWarning: urllib3 (1.26.5) or chardet (5.1.0) doesn't match a supported version!
+  warnings.warn("urllib3 ({}) or chardet ({}) doesn't match a supported "
+    _
+   /_| _ '
+  (  |/ /(//) v2.2.1
+      _/      
 
+[*] Probing the target for stability
+[*] Analysing HTTP response for anomalies
+[*] Analysing HTTP response for potential parameter names
+[*] Logicforcing the URL endpoint
+[✓] parameter detected: code, based on: body length
+[+] Parameters found: code
+```
+
+It found a code parameter.
+
+Now, remember that I found `user.php` page which took in a parameter, so I decided to use it to determine what parameter is used.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/BroScience]
+└─$ arjun -u https://broscience.htb/user.php?
+/home/kali/.local/lib/python3.10/site-packages/requests/__init__.py:87: RequestsDependencyWarning: urllib3 (1.26.5) or chardet (5.1.0) doesn't match a supported version!
+  warnings.warn("urllib3 ({}) or chardet ({}) doesn't match a supported "
+    _
+   /_| _ '                                                                                                                                                  
+  (  |/ /(//) v2.2.1                                                                                                                                        
+      _/                                                                                                                                                    
+
+[*] Probing the target for stability
+[*] Analysing HTTP response for anomalies
+[*] Analysing HTTP response for potential parameter names
+[*] Logicforcing the URL endpoint
+[✓] parameter detected: id, based on: body length
+[+] Parameters found: id
+```
+
+So, I figured out that this was an `alternative method` of finding out usernames using the `id` parameter.
+
+Then, I visited the `/includes` directory.
+
+![image](https://user-images.githubusercontent.com/87711310/227706945-9bb9c9b9-3b16-4ca1-9871-bd1bccd62480.png)
+
+I tried to open these files, but got an error.
+
+![image](https://user-images.githubusercontent.com/87711310/227706967-db569593-1084-4bda-95e6-6a40601d6610.png)
+
+I tested to confirm that LFI also existed on these pages too.
+
+![image](https://user-images.githubusercontent.com/87711310/227707019-18f09b6b-4898-433a-b330-4e22e8680e7b.png)
+
+Now, I thought of trying something silly but useful in ctfs, I double encoded the `path` parameter and send the request. This worked!! It was such a silly mistake to not check for basic LFI bypasses.
+
+![image](https://user-images.githubusercontent.com/87711310/227707192-8ce38d67-d2d4-4aac-b8f4-ee802bd6728b.png)
+
+I was able to retreive the code of `login.php` using the double encoding method.
+
+So, now, it was time for code review. I retrieved the code and strated going through it.
+
+```php
+<?php
+session_start();
+
+// Check if user is logged in already
+if (isset($_SESSION['id'])) {
+    header('Location: /index.php');
+}
+
+if (isset($_GET['code'])) {
+    // Check if code is formatted correctly (regex)
+    if (preg_match('/^[A-z0-9]{32}$/', $_GET['code'])) {
+        // Check for code in database
+        include_once 'includes/db_connect.php';
+
+        $res = pg_prepare($db_conn, "check_code_query", 'SELECT id, is_activated::int FROM users WHERE activation_code=$1');
+        $res = pg_execute($db_conn, "check_code_query", array($_GET['code']));
+
+        if (pg_num_rows($res) == 1) {
+            // Check if account already activated
+            $row = pg_fetch_row($res);
+            if (!(bool)$row[1]) {
+                // Activate account
+                $res = pg_prepare($db_conn, "activate_account_query", 'UPDATE users SET is_activated=TRUE WHERE id=$1');
+                $res = pg_execute($db_conn, "activate_account_query", array($row[0]));
+                
+                $alert = "Account activated!";
+                $alert_type = "success";
+            } else {
+                $alert = 'Account already activated.';
+            }
+        } else {
+            $alert = "Invalid activation code.";
+        }
+    } else {
+        $alert = "Invalid activation code.";
+    }
+} else {
+    $alert = "Missing activation code.";
+}
+?>
+
+<html>
+    <head>
+        <title>BroScience : Activate account</title>
+        <?php include_once 'includes/header.php'; ?>
+    </head>
+    <body>
+        <?php include_once 'includes/navbar.php'; ?>
+        <div class="uk-container uk-container-xsmall">
+            <?php
+            // Display any alerts
+            if (isset($alert)) {
+            ?>
+                <div uk-alert class="uk-alert-<?php if(isset($alert_type)){echo $alert_type;}else{echo 'danger';} ?>">
+                    <a class="uk-alert-close" uk-close></a>
+                    <?=$alert?>
+                </div>
+            <?php
+            }
+            ?>
+        </div>
+    </body>
+</html>
+```
