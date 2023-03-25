@@ -406,4 +406,41 @@ if (isset($_POST['username']) && isset($_POST['email']) && isset($_POST['passwor
 ?>
 ```
 
-Analyzing the code, I found a name of the function that is responsible for generating the activation code: `generate_Activation_code`.
+Analyzing the code, I found a name of the function that is responsible for generating the activation code: `generate_Activation_code`. This was retrieved from `utils.php` file, so, I decided to retrieve and take a look at it.
+
+![image](https://user-images.githubusercontent.com/87711310/227709503-748f2349-0b4c-4d2d-bd43-10952906daba.png)
+
+
+```php
+function generate_activation_code() {
+    $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+    srand(time());
+    $activation_code = "";
+    for ($i = 0; $i < 32; $i++) {
+        $activation_code = $activation_code . $chars[rand(0, strlen($chars) - 1)];
+    }
+    return $activation_code;
+}
+```
+
+
+I used `chatGPT` to decode it and understand its meaning.
+```
+The code defines a function called generate_activation_code() that generates a random 32-character activation code.
+
+Here's a breakdown of how the function works:
+
+1. The function starts by defining a string of characters called $chars. This string contains all lowercase and uppercase letters of the English alphabet, as well as digits 0-9.
+2. The srand() function is called with time() as its argument to seed the random number generator with the current time.
+3. An empty string variable called $activation_code is defined.
+4. A for loop is used to generate the activation code one character at a time. The loop runs 32 times, which is the length of the activation code.
+5. Within the loop, rand() is used to generate a random integer between 0 and the length of $chars minus 1. This integer is used as an index to select a random character from the $chars string.
+6. The selected character is appended to $activation_code.
+7. After the loop has finished running, the function returns the generated $activation_code.
+
+So, when you call the generate_activation_code() function, it will return a random 32-character string that can be used as an activation code for some kind of software or service.
+
+```
+
+
+
