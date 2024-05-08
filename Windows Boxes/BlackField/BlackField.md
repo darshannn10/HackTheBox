@@ -1200,7 +1200,7 @@ Mode                LastWriteTime         Length Name
 -a----        2/28/2020   2:26 PM             32 user.txt
 
 *Evil-WinRM* PS C:\Users\svc_backup\Desktop> cat user.txt
-3920bb317a0bef51027e2852be64b543
+...SNIP...
 
 ```
 
@@ -1661,6 +1661,6 @@ Root flag:
 t*Evil-WinRM* PS C:\Users\Administrator\Documents>cd ..
 *Evil-WinRM* PS C:\Users\Administrator> cd Desktop
 *Evil-WinRM* PS C:\Users\Administrator\Desktop> cat root.txt
-4375a629c7c67c8e29db269060c955cb
+...SNIP..
 
 ```
