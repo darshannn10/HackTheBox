@@ -1,3 +1,4 @@
+# Hack The Box - Active Walkthrough 
 
 The [Active](https://app.hackthebox.com/machines/Active) machine is an easy Windows Machine with a strong focus on Active Directory exploitation. Here, some knowledge about AD and being able to read a Bloodhound graph should be enough to clear the box.
 
@@ -67,7 +68,7 @@ OS and Service detection performed. Please report any incorrect results at https
 Nmap done: 1 IP address (1 host up) scanned in 402.39 seconds
 ```
 
-Rustscan
+### Rustscan
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Active]
@@ -136,7 +137,7 @@ Read data files from: /usr/bin/../share/nmap
 Nmap done: 1 IP address (1 host up) scanned in 0.80 seconds
 ```
 
-Adding IP & domain to /etc/hosts
+### Adding IP & domain to /etc/hosts
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Active]
@@ -146,7 +147,7 @@ Adding IP & domain to /etc/hosts
 10.10.10.100 active.htb
 ```
 
-Enumerating SMB using smbclient with no password
+### Enumerating SMB using smbclient with no password
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Active]
@@ -215,7 +216,7 @@ cd: no such file or directory: active.htbPolicies{31B2F340-016D-11D2-945F-00C04F
 </Groups>
 ```
 
-Decrypting the hash
+### Decrypting the hash
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Active]
@@ -255,7 +256,7 @@ Using the obtained credentials to try and log into SMB
         Users                                                   READ ONLY
 ```
 
-Using SMBMap to login and get user flag
+### Using `SMBMap` to login and get user flag
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Active]
@@ -316,7 +317,7 @@ getting file \SVC_TGS\Desktop\user.txt of size 34 as user.txt (0.0 KiloBytes/sec
 smb: \SVC_TGS\Desktop\>
 ```
 
-Using LdapSearch to find out 
+### Using LdapSearch to find out 
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Active]
@@ -365,7 +366,7 @@ sAMAccountName: DnsUpdateProxy
 sAMAccountName: SVC_TGS
 ```
 
-Found this useful script online
+### Found this useful script online
 
 ```bash
 
@@ -384,7 +385,7 @@ objects that are not disabled. Here's the breakdown:
 	b. objectClass=user : Narrows down to objects with a class of "user".!(useraccountcontrol:1.2.840.113556.1.4.803:=2) : Excludes disabled accounts. The userAccountControl attribute is a bit flag; this part of the filter excludes accounts with the second bit set (which indicates a disabled account).
 ```
 
-Impacket’s [GetADUsers.py](http://getadusers.py/) simplifies the process of enumerating domain user accounts.
+### Impacket’s [GetADUsers.py](http://getadusers.py/) simplifies the process of enumerating domain user accounts.
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Active]
@@ -419,7 +420,7 @@ $krb5tgs$23$*Administrator$ACTIVE.HTB$active.htb/Administrator*$73fd1c3cdfb6f108
 ...SNIP...
 ```
 
-Cracking the admin hash
+### Cracking the admin hash
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Active]
@@ -501,7 +502,7 @@ Started: Thu Jan  4 10:40:59 2024
 Stopped: Thu Jan  4 10:42:12 2024
 ```
 
-Using wmiexec to login as an administrator and get the root flag
+### Using `wmiexec` to login as an administrator and get the root flag
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Active]
