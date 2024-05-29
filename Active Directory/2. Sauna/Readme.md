@@ -177,13 +177,15 @@ Cannot connect to server.  Error was NT_STATUS_LOGON_FAILURE
 
 ### Visiting the website
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/3cf9834f-e4e2-4fad-819e-80c02dc43f28/Untitled.png)
+![sau-1](https://github.com/darshannn10/HackTheBox/assets/87711310/84617098-2fa0-4c08-8729-c75b903959b9)
+
 
 trying different extensions (index.php, index.aspx, index.html…etc.) to check which one works.
 
 About.html page has few user which can be used as usernames.
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/3a53379d-c63b-4bb9-a56a-c6e91cdad0d3/Untitled.png)
+![sau-2](https://github.com/darshannn10/HackTheBox/assets/87711310/03393dfb-21f0-4bbf-ab8d-5c39d6274a67)
+
 
 ```bash
 Fergus Smith
@@ -735,13 +737,14 @@ Info: Download successful!
 
 Running `Bloodhound` and imported the `.zip` folder into `BloodHound` for further info gathering
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/b87f6d14-6355-478c-b1a4-b707be77481e/Untitled.png)
+![sau-3](https://github.com/darshannn10/HackTheBox/assets/87711310/cc997819-cd0e-4303-be86-a9bd33d5cd14)
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/10ccc59f-e555-40dc-807b-634116a5fe0f/Untitled.png)
+![sau-4](https://github.com/darshannn10/HackTheBox/assets/87711310/75b91b1a-b231-4cf8-90e4-21ae16974044)
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/6b581b54-a1fb-445b-bea1-34d6dbff4a08/Untitled.png)
+![sau-5](https://github.com/darshannn10/HackTheBox/assets/87711310/201f963f-687b-4bf0-8126-aaee55c3c536)
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/c3a2211b-1260-4f1a-9958-a388532d088a/Untitled.png)
+![sau-6](https://github.com/darshannn10/HackTheBox/assets/87711310/41178dcc-2660-445a-bcc2-431e9cf8761f)
+
 
 After running `Bloohound`, I found an expoit path for privesc.
 
