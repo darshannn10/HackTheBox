@@ -1386,7 +1386,8 @@ INFO: Done in 00M 47S
 
 On importing that into Bloodhound, Tiffany.Molina doesn’t have anything interesting:
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/f3847578-62f4-4ae6-a405-3e8fb9437b18/Untitled.png)
+![int-1](https://github.com/darshannn10/HackTheBox/assets/87711310/360c3e70-16cd-47ca-8da8-cbb83fd49d1b)
+
 
 I also had Bloodhound look for AS-REP roastable and Kerberoastable users, but there were none of interest.
 
@@ -1554,15 +1555,17 @@ INFO: Done in 00M 50S
 
 Importing the data in `BloodHound,` I found that Ted.Graves doesn’t have access to anything new over SMB, and at first glance, the previous Bloodhound collection as Tiffany.Molina doesn’t show anything particularly interesting with this account. There are no first degree object control or group delegated object control items. However, if I re-run with Ted.Graves credentials, there’s a slight difference:
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/3f0c36a5-4dec-4d17-9f3b-67f03f0ab902/Untitled.png)
+![int-2](https://github.com/darshannn10/HackTheBox/assets/87711310/0e7ae60d-baed-45d0-b313-cecefdef791e)
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/5f0fe14d-1c32-4c2f-aed5-4ed2c1899839/Untitled.png)
+![int-3](https://github.com/darshannn10/HackTheBox/assets/87711310/670cf1f6-b79e-42b9-9d84-1115d2e2aebc)
+
 
 Here, `Ted.Graves` is in the `ITSupport` group, which has `ReadGMSAPassword` on SVC_INT. Even more interestingly, if I use the pre-built query `Shortest Path from Owned Principles`, the svc_int account has `AllowedToDelegate` on the DC:
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/96a767c5-d425-44d2-b105-e92f882f643d/Untitled.png)
+![int-4](https://github.com/darshannn10/HackTheBox/assets/87711310/77dcb0e0-3345-4727-ae04-18e61acb385c)
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/817b6ab3-aad0-43af-9032-b8854ae0ec2a/Untitled.png)
+![int-5](https://github.com/darshannn10/HackTheBox/assets/87711310/94a9bd29-e0e6-4bdf-be00-1fe497a7ba62)
+
 
 [`Group Manage Service Accounts`](https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/service-accounts-group-managed) (GMSA) provide additional security to service accounts. There’s a Python tool for extracting GMSA passwords, [`gMSADumper`](https://github.com/micahvandeusen/gMSADumper), which I decided to use.
 
@@ -1667,7 +1670,8 @@ Here in the [getST.py](http://getST.py) query:
 
 To get the SPN, that’s in the Node Info -> Node Properties section for the svc_int user in Bloodhound:
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/cc4bbe71-7ebb-42fa-bc10-f8988516d3f4/Untitled.png)
+![int-6](https://github.com/darshannn10/HackTheBox/assets/87711310/c99c705a-8e33-4c48-87c0-36683e82fd40)
+
 
 Now that we have a `Silver Ticket`, running `wmiexec` to pass the `hash/ticket` to login as an `administrator`.
 
