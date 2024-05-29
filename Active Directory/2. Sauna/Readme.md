@@ -1,6 +1,6 @@
 # Hack The Box - Sauna Walkthrough 
 
-The [SAuna](https://app.hackthebox.com/machines/Sauna) machine is an easy Windows Machine with a strong focus on Active Directory enumeration and exploitation. To get through this machine, a bit of reconnaissance skills should be enough.
+The [Sauna](https://app.hackthebox.com/machines/Sauna) machine is an easy Windows Machine with a strong focus on Active Directory enumeration and exploitation. To get through this machine, a bit of reconnaissance skills should be enough.
 
 
 If you didn’t solve this challenge and just look for answers, first, you should take a look at this [mind map](https://github.com/Orange-Cyberdefense/ocd-mindmaps/blob/main/img/pentest_ad_dark_2023_02.svg) from [Orange Cyberdefense](https://github.com/Orange-Cyberdefense) and try again. It could give you some hints about interesting attack paths when dealing with an Active Directory.
