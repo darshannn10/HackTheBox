@@ -1,3 +1,13 @@
+# Hack The Box - Cascade Walkthrough 
+
+
+The [Cascade](https://app.hackthebox.com/machines/Forest) machine is a medium Windows Machine with a strong focus on Active Directory exploitation, but also a bit of cryptography and reverse engineering. It should be noted that the machine is a bit CTF-y.
+
+## Reconnaissance
+In a penetration test or red team, reconnaissance consists of techniques that involve adversaries actively or passively gathering information that can be used to support targeting.
+
+This information can then be leveraged by an adversary to aid in other phases of the adversary lifecycle, such as using gathered information to plan and execute initial access, to scope and prioritize post-compromise objectives, or to drive and lead further reconnaissance efforts. Here, our only piece of information is an IP address.
+
 
 ### Nmap Scan
 
