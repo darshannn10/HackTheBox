@@ -1,5 +1,14 @@
 # Hack The Box - Forest Walkthrough 
 
+The [Forest](https://app.hackthebox.com/machines/Forest) machine is an easy Windows Machine with a strong focus on Active Directory exploitation. Here, some knowledge about AD and being able to read a Bloodhound graph should be enough to clear the box.
+
+If you didn’t solve this challenge and just look for answers, first, you should take a look at this [mind map](https://github.com/Orange-Cyberdefense/ocd-mindmaps/blob/main/img/pentest_ad_dark_2023_02.svg) from [Orange Cyberdefense](https://github.com/Orange-Cyberdefense) and try again. It could give you some hints about interesting attack paths when dealing with an Active Directory.
+
+## Reconnaissance
+In a penetration test or red team, reconnaissance consists of techniques that involve adversaries actively or passively gathering information that can be used to support targeting.
+
+This information can then be leveraged by an adversary to aid in other phases of the adversary lifecycle, such as using gathered information to plan and execute initial access, to scope and prioritize post-compromise objectives, or to drive and lead further reconnaissance efforts. Here, our only piece of information is an IP address.
+
 
 
 **Nmap Scan**
